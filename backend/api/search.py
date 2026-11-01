@@ -19,6 +19,7 @@ import json
 import os
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
+from decimal import Decimal
 
 TABLE_NAME = os.environ.get('DYNAMODB_TABLE', 'movies')
 REGION     = os.environ.get('AWS_REGION', 'us-east-1')
@@ -31,6 +32,11 @@ CORS = {
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET,OPTIONS',
 }
+
+def _serial(obj):
+    if isinstance(obj, Decimal):
+        return int(obj) if obj % 1 == 0 else float(obj)
+    raise TypeError(f'Not serializable: {type(obj)}')
 
 def handler(event, context):
     if event.get('httpMethod') == 'OPTIONS':
@@ -62,7 +68,7 @@ def handler(event, context):
         return {
             'statusCode': 200,
             'headers': {**CORS, 'Content-Type': 'application/json'},
-            'body': json.dumps({'films': films, 'count': len(films), 'offset': offset}),
+            'body': json.dumps({'films': films, 'count': len(films), 'offset': offset}, default=_serial),
         }
     except Exception as e:
         return {
