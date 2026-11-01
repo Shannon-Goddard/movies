@@ -1,0 +1,20 @@
+{
+  "name": "Movies",
+  "short_name": "Movies",
+  "description": "Free, open-licensed films from the Internet Archive. No account, no ads, free forever.",
+  "start_url": "/movies/",
+  "scope": "/movies/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "orientation": "any",
+  "icons": [
+    { "src": "/movies/icons/logo-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/movies/icons/logo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "categories": ["entertainment", "video"],
+  "shortcuts": [
+    { "name": "Search", "url": "/movies/#/search", "description": "Search for films" },
+    { "name": "Watchlist", "url": "/movies/#/library", "description": "Your saved films" }
+  ]
+}

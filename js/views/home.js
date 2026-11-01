@@ -1,0 +1,274 @@
+import { searchByGenre, searchByType, searchByEra, searchByColor } from '../api.js';
+import { InfiniteScroll } from '../scroll.js';
+import { playQueue, playAt } from '../player.js';
+import { loadSession } from '../queue.js';
+import { isSaved, toggleSaved } from '../library.js';
+import { posterThumb, coverGradient } from '../utils.js';
+import en from '../i18n/en.js';
+
+const GENRES = ['Horror', 'Comedy', 'Drama', 'Documentary', 'Sci-Fi', 'Western', 'Romance', 'Adventure', 'Thriller', 'Mystery'];
+
+const TYPES = [
+  { label: 'Feature Film', value: 'feature'    },
+  { label: 'Short Film',   value: 'short'       },
+  { label: 'Documentary',  value: 'documentary' },
+  { label: 'Cartoon',      value: 'cartoon'     },
+  { label: 'Serial',       value: 'serial'      },
+  { label: 'Newsreel',     value: 'newsreel'    },
+  { label: 'Educational',  value: 'educational' },
+  { label: 'Lecture',      value: 'lecture'     },
+];
+
+const ERAS = [
+  { label: 'Silent Era',  value: 'silent'  },
+  { label: '1930s–50s',   value: 'classic' },
+  { label: '1960s–70s',   value: 'vintage' },
+  { label: '1980s+',      value: 'modern'  },
+];
+
+const COLORS = [
+  { label: 'Black & White', value: 'bw'        },
+  { label: 'Color',         value: 'color'     },
+  { label: 'Colorized',     value: 'colorized' },
+];
+
+export async function render(app) {
+  const session   = loadSession();
+  const recentRaw = _loadRecent();
+
+  app.innerHTML = `
+    ${session.film_id ? _resumeBar(session) : ''}
+
+    ${recentRaw.length ? `
+      <section class="mb-8">
+        <h2 class="section-label">${en.home_recent}</h2>
+        <div class="scroll-row">
+          ${recentRaw.map((f, i) => _posterCard(f, i, 'recent')).join('')}
+        </div>
+      </section>` : ''}
+
+    <section class="mb-8">
+      <h2 class="section-label">${en.home_type}</h2>
+      <div class="scroll-row">
+        ${TYPES.map(t => `<button data-type="${t.value}" class="chip">${t.label}</button>`).join('')}
+      </div>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="section-label">${en.home_genre}</h2>
+      <div class="scroll-row">
+        ${GENRES.map(g => `<button data-genre="${g.toLowerCase()}" class="chip">${g}</button>`).join('')}
+      </div>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="section-label">${en.home_era}</h2>
+      <div class="scroll-row">
+        ${ERAS.map(e => `<button data-era="${e.value}" class="chip">${e.label}</button>`).join('')}
+      </div>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="section-label">${en.home_color}</h2>
+      <div class="scroll-row">
+        ${COLORS.map(c => `<button data-color="${c.value}" class="chip">${c.label}</button>`).join('')}
+      </div>
+    </section>
+
+    <section id="results-section" class="mb-8 hidden">
+      <h2 id="results-title" class="section-label"></h2>
+      <div id="sticky-count-bar">
+        <p id="results-count" class="text-xs text-white/40"></p>
+        <button id="btn-play-all"
+                class="flex items-center gap-1.5 text-xs font-medium text-accent hover:opacity-80 transition">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Play all
+        </button>
+      </div>
+      <div id="results-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">${_skeletons(8)}</div>
+      <p id="results-status" class="text-xs text-center py-4 text-white/30"></p>
+    </section>
+
+    <div id="home-empty" class="flex flex-col items-center justify-center py-16 gap-3 text-white/20">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/>
+      </svg>
+      <p class="text-sm">Pick a filter above or search to start watching</p>
+    </div>
+  `;
+
+  let activeScroll = null;
+
+  function _wire(selector, fetchFn, labelFn) {
+    app.querySelectorAll(selector).forEach(el => {
+      el.addEventListener('click', () => {
+        if (!_setActive(el)) { activeScroll?.destroy(); activeScroll = null; return; }
+        activeScroll?.destroy();
+        activeScroll = _loadPaged(fetchFn(el), labelFn(el));
+      });
+    });
+  }
+
+  _wire('[data-type]',  el => offset => searchByType(el.dataset.type, 20, offset),  el => el.textContent);
+  _wire('[data-genre]', el => offset => searchByGenre(el.dataset.genre, 20, offset), el => el.textContent);
+  _wire('[data-era]',   el => offset => searchByEra(el.dataset.era, 20, offset),     el => el.textContent);
+  _wire('[data-color]', el => offset => searchByColor(el.dataset.color, 20, offset), el => el.textContent);
+
+  app.querySelectorAll('[data-recent]').forEach(el => {
+    el.addEventListener('click', () => playQueue(recentRaw, parseInt(el.dataset.recent)));
+  });
+
+  app.querySelector('#btn-resume')?.addEventListener('click', () => {
+    if (session.film) playAt(session.film, session.position_sec || 0);
+  });
+}
+
+function _setActive(el) {
+  const wasActive = el.classList.contains('chip-active');
+  document.querySelectorAll('[data-genre],[data-type],[data-era],[data-color]').forEach(b => {
+    b.classList.remove('chip-active'); b.classList.add('chip');
+  });
+  if (wasActive) {
+    document.getElementById('results-section')?.classList.add('hidden');
+    document.getElementById('home-empty')?.classList.remove('hidden');
+    return false;
+  }
+  el.classList.add('chip-active'); el.classList.remove('chip');
+  return true;
+}
+
+function _loadPaged(fetchFn, label) {
+  const section = document.getElementById('results-section');
+  const title   = document.getElementById('results-title');
+  const list    = document.getElementById('results-list');
+  const status  = document.getElementById('results-status');
+  document.getElementById('home-empty')?.classList.add('hidden');
+
+  section.classList.remove('hidden');
+  title.textContent = label || '';
+  list.innerHTML = _skeletons(8);
+
+  setTimeout(() => {
+    const top = section.getBoundingClientRect().top + window.scrollY - 60;
+    window.scrollTo({ top, behavior: 'smooth' });
+  }, 50);
+
+  const bar = document.getElementById('sticky-count-bar');
+  if (bar) bar.style.display = 'none';
+
+  let allLoaded = [];
+
+  document.getElementById('btn-play-all')?.addEventListener('click', () => {
+    if (allLoaded.length) playQueue(allLoaded, 0);
+  });
+
+  const scroller = new InfiniteScroll({
+    listEl: list, statusEl: status, fetchFn,
+    renderFn: (films, offset) => {
+      if (offset === 0) list.innerHTML = '';
+      allLoaded = allLoaded.slice(0, offset).concat(films);
+      list.insertAdjacentHTML('beforeend', films.map((f, i) => _filmCard(f, offset + i)).join(''));
+      if (bar) {
+        bar.style.display = 'flex';
+        const countEl = document.getElementById('results-count');
+        if (countEl) countEl.textContent = `${allLoaded.length.toLocaleString()} loaded`;
+      }
+    },
+  });
+
+  list.addEventListener('click', e => {
+    const save = e.target.closest('[data-save]');
+    if (save) {
+      e.stopPropagation();
+      const film = allLoaded.find(f => f.film_id === save.dataset.save);
+      if (film) {
+        const nowSaved = toggleSaved(film);
+        save.classList.toggle('text-accent', nowSaved);
+        save.classList.toggle('text-white/20', !nowSaved);
+        save.querySelector('svg').setAttribute('fill', nowSaved ? 'currentColor' : 'none');
+      }
+      return;
+    }
+    const card = e.target.closest('[data-index]');
+    if (card) playQueue(allLoaded, parseInt(card.dataset.index));
+  });
+
+  scroller.start();
+  return scroller;
+}
+
+// ── Components ────────────────────────────────────────────
+
+function _resumeBar(session) {
+  const title = session.film?.title || 'Last session';
+  const pos   = session.position_sec ? _fmt(session.position_sec) : '';
+  return `
+    <div class="flex items-center justify-between bg-card rounded-lg px-4 py-3 mb-6"
+         style="border:1px solid rgba(255,255,255,0.07)">
+      <div class="min-w-0">
+        <p class="text-xs text-white/40 mb-0.5">${en.home_continue}</p>
+        <p class="text-sm font-medium truncate">${_esc(title)}${pos ? ` <span class="text-white/30 font-normal">· ${pos}</span>` : ''}</p>
+      </div>
+      <button id="btn-resume" class="ml-4 shrink-0 text-sm font-medium text-accent hover:opacity-80 transition">Resume</button>
+    </div>`;
+}
+
+function _posterCard(film, index, type) {
+  return `
+    <button data-${type}="${index}" class="card flex-shrink-0 w-32 text-left">
+      <div class="w-32 h-48 rounded-lg overflow-hidden mb-2">${posterThumb(film)}</div>
+      <p class="text-xs font-medium truncate">${_esc(film.title)}</p>
+      <p class="text-xs text-white/40 truncate">${film.year || ''}</p>
+    </button>`;
+}
+
+function _filmCard(film, index) {
+  const duration = film.duration_sec ? _fmt(film.duration_sec) : '';
+  const saved    = isSaved(film.film_id);
+  const badges   = [film.year, film.color_label, film.era_label].filter(Boolean);
+  return `
+    <div data-index="${index}" data-film-id="${_esc(film.film_id)}"
+         class="card bg-card rounded-lg overflow-hidden cursor-pointer hover:bg-raised transition"
+         style="border:1px solid rgba(255,255,255,0.06)">
+      <div class="relative aspect-[2/3] overflow-hidden">
+        ${posterThumb(film)}
+        ${duration ? `<span class="absolute bottom-1.5 right-1.5 text-[10px] tabular-nums bg-black/70 text-white/80 px-1.5 py-0.5 rounded">${duration}</span>` : ''}
+        <button data-save="${_esc(film.film_id)}" aria-label="Save to watchlist"
+                class="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/50 transition hover:scale-110 ${saved ? 'text-accent' : 'text-white/50'}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="${saved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="p-2">
+        <p class="text-xs font-medium truncate leading-tight">${_esc(film.title)}</p>
+        ${badges.length ? `<p class="text-[10px] text-white/35 truncate mt-0.5">${badges.join(' · ')}</p>` : ''}
+      </div>
+    </div>`;
+}
+
+function _fmt(sec) {
+  sec = parseFloat(sec);
+  if (isNaN(sec)) return '';
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60).toString().padStart(2, '0');
+  return h > 0 ? `${h}:${m.toString().padStart(2,'0')}:${s}` : `${m}:${s}`;
+}
+
+function _loadRecent() {
+  try { return JSON.parse(localStorage.getItem('movies_recent')) || []; }
+  catch { return []; }
+}
+
+function _skeletons(n) {
+  return Array.from({ length: n }, () =>
+    `<div class="rounded-lg overflow-hidden"><div class="skeleton aspect-[2/3] w-full"></div><div class="skeleton h-3 mt-2 w-3/4"></div></div>`
+  ).join('');
+}
+
+function _esc(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+  );
+}

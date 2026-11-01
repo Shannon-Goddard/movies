@@ -1,0 +1,43 @@
+# Environment & credentials — never commit
+.env
+.env.*
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Ingestion resume cursors
+ia_resume_*.json
+
+# Output / scratch files
+*_out.txt
+infra/ia_tags*.txt
+
+# Lambda build artifacts
+*.zip
+*_out.json
+*.pyo
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+dist/
+*.egg-info/
+
+# Node / frontend tooling (if added later)
+node_modules/
+.npm/
+
+# AWS SAM local
+.aws-sam/
+samconfig.toml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
