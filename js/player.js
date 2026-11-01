@@ -184,7 +184,7 @@ function _onPrev() {
 window['__onGCastApiAvailable'] = function(isAvailable) {
   if (!isAvailable) return;
   cast.framework.CastContext.getInstance().setOptions({
-    receiverApplicationId: 'REPLACE_WITH_CAST_APP_ID',
+    receiverApplicationId: '20706015',
     autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
   });
   btnCast.classList.remove('hidden');
