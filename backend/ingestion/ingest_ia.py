@@ -51,9 +51,14 @@ def _era(year):
 
 # ── Color detection (from IA subject/description tags) ────
 def _color(meta):
-    subjects = ' '.join(meta.get('subject', [])).lower()
-    desc     = (meta.get('description', '') or '').lower()
-    combined = subjects + ' ' + desc
+    subjects = meta.get('subject', [])
+    if isinstance(subjects, str):
+        subjects = [subjects]
+    subjects = [s if isinstance(s, str) else '' for s in subjects]
+    desc     = (meta.get('description', '') or '')
+    if isinstance(desc, list):
+        desc = ' '.join(desc)
+    combined = ' '.join(subjects).lower() + ' ' + desc.lower()
     if 'colorized' in combined:   return 'colorized'
     if 'color' in combined:       return 'color'
     if 'black and white' in combined or 'b&w' in combined or 'bw' in combined:
@@ -96,6 +101,8 @@ def _resolve_genre(subjects):
     if isinstance(subjects, str):
         subjects = [subjects]
     for s in subjects:
+        if not isinstance(s, str):
+            continue
         for tag in s.replace(',', ';').split(';'):
             mapped = _TAG_TO_GENRE.get(tag.strip().lower())
             if mapped:
@@ -181,13 +188,17 @@ def ingest(collection, limit=None, resume=False):
             subjects = meta.get('subject', [])
             genre    = _resolve_genre(subjects)
 
+            director = meta.get('creator', '') or ''
+            if isinstance(director, list):
+                director = director[0] if director else ''
+
             era   = _era(year)
             color = _color(meta)
 
             item_data = {
                 'film_id':     film_id,
                 'title':       meta.get('title', identifier),
-                'director':    meta.get('creator', ''),
+                'director':    director,
                 'year':        year,
                 'genre':       genre,
                 'type':        COLLECTION_TYPE_MAP.get(collection, 'feature'),
