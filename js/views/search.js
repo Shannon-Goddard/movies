@@ -43,14 +43,19 @@ export async function render(app, query = '') {
   const scroller = new InfiniteScroll({
     listEl: list, statusEl: status,
     fetchFn: offset => searchFilms(query, 20, offset),
-    renderFn: (films, offset) => {
+    renderFn: (films, offset, data) => {
       if (offset === 0) list.innerHTML = '';
       allLoaded = allLoaded.slice(0, offset).concat(films);
       list.insertAdjacentHTML('beforeend', films.map((f, i) => _filmCard(f, offset + i)).join(''));
       if (bar) {
         bar.style.display = 'flex';
         const countEl = document.getElementById('results-count');
-        if (countEl) countEl.textContent = `${allLoaded.length.toLocaleString()} results`;
+        if (countEl) {
+          const total = data?.total;
+          countEl.textContent = total
+            ? `${allLoaded.length.toLocaleString()} of ${total.toLocaleString()}`
+            : `${allLoaded.length.toLocaleString()} results`;
+        }
       }
     },
   });

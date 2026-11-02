@@ -52,23 +52,27 @@ def handler(event, context):
     offset = int(params.get('offset', 0))
 
     try:
+        total = None
         if q:
             films = _full_scan_search(q, limit, offset)
         elif genre:
-            films = _gsi_query('genre-index', 'genre', genre, limit, offset)
+            films, total = _gsi_query('genre-index', 'genre', genre, limit, offset)
         elif ftype:
-            films = _gsi_query('type-index', 'type', ftype, limit, offset)
+            films, total = _gsi_query('type-index', 'type', ftype, limit, offset)
         elif era:
-            films = _gsi_query('era-index', 'era', era, limit, offset)
+            films, total = _gsi_query('era-index', 'era', era, limit, offset)
         elif color:
-            films = _gsi_query('color-index', 'color', color, limit, offset)
+            films, total = _gsi_query('color-index', 'color', color, limit, offset)
         else:
             films = _scan_all(limit, offset)
 
+        body = {'films': films, 'count': len(films), 'offset': offset}
+        if total is not None:
+            body['total'] = total
         return {
             'statusCode': 200,
             'headers': {**CORS, 'Content-Type': 'application/json'},
-            'body': json.dumps({'films': films, 'count': len(films), 'offset': offset}, default=_serial),
+            'body': json.dumps(body, default=_serial),
         }
     except Exception as e:
         return {
@@ -82,9 +86,15 @@ def _gsi_query(index, key_name, value, limit, offset):
     resp = table.query(
         IndexName=index,
         KeyConditionExpression=Key(key_name).eq(value),
+        Select='COUNT',
+    )
+    total = resp.get('Count', 0)
+    resp2 = table.query(
+        IndexName=index,
+        KeyConditionExpression=Key(key_name).eq(value),
         Limit=limit + offset,
     )
-    return resp.get('Items', [])[offset:offset + limit]
+    return resp2.get('Items', [])[offset:offset + limit], total
 
 
 def _full_scan_search(q, limit, offset):

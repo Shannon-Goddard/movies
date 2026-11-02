@@ -28,7 +28,7 @@ export class InfiniteScroll {
     try {
       const data   = await this._fetchFn(this._offset);
       const films  = data.films || data.tracks || data.results || [];
-      this._renderFn(films, this._offset);
+      this._renderFn(films, this._offset, data);
       this._offset += films.length;
       if (films.length < PAGE_SIZE) {
         this._done = true;
