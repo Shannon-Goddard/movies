@@ -201,6 +201,8 @@ Items with no matching tags are stored as `genre: other`.
 | Director pages | Drill-down from film card → all films by director |
 | Collections view | Browse by IA collection |
 | Download button | `stream_url` with `download` attr for public domain items |
+| **Subgenre system** | Add `subgenre` field — map horror tags to Supernatural, Slasher, Zombie, etc. Items with `genre: other` get subgenre from collection (e.g. `horror_and_suspense` → `subgenre: horror`). Netflix-style horizontal rows per subgenre on home screen. |
+| **Collection-based genre remap** | One-time script — scan all items where `genre = other`, remap genre from collection (e.g. `horror_and_suspense` → `genre: horror`). Run after all ingestion complete. |
 
 ---
 
