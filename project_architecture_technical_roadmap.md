@@ -218,6 +218,8 @@ Items with no matching tags are stored as `genre: other`.
 | **Director page** | Tap director name on film card → all films by that director. |
 | **Watch history** | Auto-populated, separate from watchlist. Show last 5 in continue watching row. |
 | **Share / deep link** | `#/film/{film_id}` route that opens player directly. Share button on film card. |
+| **Tag-based subgenre rows** | Netflix-style curated rows driven by IA subject tags. e.g. Horror → Vampires, Zombies, Ghosts, Creature Features, Slasher. Western → Cowboys, Outlaws, Spaghetti Westerns. Sci-Fi → Aliens, Space, Mad Scientists, Giant Monsters. Tag vocabulary built during cleaning pass from high-frequency subject tag scan across full catalog. |
+| **Content warning** | Add notice to about.html and a dismissible banner on first visit — catalog contains unfiltered historical content including violence, war footage, and period-accurate depictions. Not all content is suitable for children. Add `mature` flag to specific items during cleaning pass with UI filter toggle. |
 
 ---
 
