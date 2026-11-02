@@ -37,20 +37,26 @@ def handler(event, context):
         return {'statusCode': 200, 'headers': CORS, 'body': ''}
 
     if not _cache:
-        resp = table.scan(Select='ALL_ATTRIBUTES')
-        items = resp.get('Items', [])
-
         by_type  = {}
         by_era   = {}
         by_color = {}
+        total    = 0
 
-        for item in items:
-            t = item.get('type');  by_type[t]  = by_type.get(t, 0)  + 1 if t else None
-            e = item.get('era');   by_era[e]   = by_era.get(e, 0)   + 1 if e else None
-            c = item.get('color'); by_color[c] = by_color.get(c, 0) + 1 if c else None
+        kwargs = {'Select': 'SPECIFIC_ATTRIBUTES', 'ProjectionExpression': '#t, era, color',
+                  'ExpressionAttributeNames': {'#t': 'type'}}
+        while True:
+            resp  = table.scan(**kwargs)
+            for item in resp.get('Items', []):
+                total += 1
+                t = item.get('type');  by_type[t]  = by_type.get(t, 0)  + 1 if t else None
+                e = item.get('era');   by_era[e]   = by_era.get(e, 0)   + 1 if e else None
+                c = item.get('color'); by_color[c] = by_color.get(c, 0) + 1 if c else None
+            if 'LastEvaluatedKey' not in resp:
+                break
+            kwargs['ExclusiveStartKey'] = resp['LastEvaluatedKey']
 
         _cache = {
-            'total_films': len(items),
+            'total_films': total,
             'by_type':  {k: v for k, v in by_type.items()  if k},
             'by_era':   {k: v for k, v in by_era.items()   if k},
             'by_color': {k: v for k, v in by_color.items() if k},
