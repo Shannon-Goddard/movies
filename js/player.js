@@ -33,9 +33,9 @@ let _castSession  = null;
 
 export function play(film) {
   if (!film?.stream_url) return;
-  videoEl.src  = film.stream_url;
+  videoEl.src    = film.stream_url;
   videoEl.poster = film.poster_url || '';
-  videoEl.play().catch(e => console.warn('Playback error:', e));
+  videoEl.addEventListener('canplay', () => videoEl.play().catch(() => {}), { once: true });
   videoTitle.textContent = film.title || '';
   document.title = `${film.title} — movies`;
   overlay.classList.add('active');
@@ -51,10 +51,10 @@ export function playQueue(films, startIndex = 0) {
 }
 
 export function playAt(film, positionSec) {
+  if (positionSec > 0) {
+    videoEl.addEventListener('canplay', () => { videoEl.currentTime = positionSec; }, { once: true });
+  }
   play(film);
-  videoEl.addEventListener('canplay', () => {
-    if (positionSec > 0) videoEl.currentTime = positionSec;
-  }, { once: true });
 }
 
 export function togglePlay() {
