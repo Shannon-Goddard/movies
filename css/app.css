@@ -141,7 +141,7 @@ body.player-visible #bottom-nav { bottom: 5rem; }
   background: linear-gradient(rgba(0,0,0,0.7), transparent);
   transition: opacity 0.3s;
 }
-#video-overlay.controls-hidden #video-top-bar { opacity: 0; pointer-events: none; }
+#video-overlay.controls-hidden #video-top-bar { opacity: 0; }
 
 /* Double-tap seek zones */
 .seek-zone {
