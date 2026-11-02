@@ -206,6 +206,45 @@ Items with no matching tags are stored as `genre: other`.
 
 ---
 
+### Phase 7: Enhanced UX 🔜 Pending
+
+| Feature | Notes |
+|---|---|
+| **Random film button** | "I'm feeling lucky" — picks a random film from the full catalog. Simple DynamoDB scan with random offset. |
+| **Trending / Most played** | Track play counts in DynamoDB. Surface top films per genre on home screen. |
+| **New additions row** | Filter by `ingested_at` descending — show recently added films. |
+| **Decade filter** | 1920s, 1930s, 1940s etc. More granular than era chips. Derived from `year` field. |
+| **Duration filter** | Under 30 min / 30–90 min / 90+ min. Critical UX at this catalog scale. |
+| **Director page** | Tap director name on film card → all films by that director. |
+| **Watch history** | Auto-populated, separate from watchlist. Show last 5 in continue watching row. |
+| **Share / deep link** | `#/film/{film_id}` route that opens player directly. Share button on film card. |
+
+---
+
+### Phase 8: Catalog Cleaning 🔜 Pending (after all ingestion complete)
+
+Same 4-pass pattern as music project (`music/cleaning/`). Scripts to be created in `backend/cleaning/`.
+
+**Pass 1 — Bad stream URLs**
+- `probe_bad_urls.py` — identify non-ASCII characters in stream_url paths
+- `clean_stream_url.py` — remove items with non-Latin or accented Latin filenames that will fail in the video player
+
+**Pass 2 — Genre remap**
+- `probe_collection_genre.py` — scan items where `genre = other`, group by collection, show counts
+- `remap_collection_genre.py` — SET genre from collection for all `other` items (e.g. `horror_and_suspense` → `horror`)
+- `probe_subgenre.py` — audit subject tags within each collection to build subgenre buckets
+- `apply_subgenres.py` — write `subgenre` field based on subject tag mapping + collection fallback
+
+**Pass 3 — Duplicates**
+- `probe_dupes.py` — scan for duplicate `stream_url` values (film_id = md5(stream_url) should prevent true dupes but verify)
+- `probe_title_dupes.py` — same title + year combinations across collections
+
+**Pass 4 — Duration**
+- `probe_duration.py` — missing and zero duration_sec by collection
+- `clean_duration.py` — null out zero values, accept missing gaps (display-only field)
+
+---
+
 ## 5. Ingestion Collections
 
 | Collection | Status | Written | Deduped | Notes |
