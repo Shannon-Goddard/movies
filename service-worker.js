@@ -1,4 +1,4 @@
-const CACHE_NAME  = 'movies-shell-v7';
+const CACHE_NAME  = 'movies-shell-v8';
 const VIDEO_CACHE = 'movies-video-v1';
 const BASE = '/movies';
 
