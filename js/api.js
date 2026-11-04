@@ -72,4 +72,4 @@ export function getStats() {
   return loadCatalog().then(all => ({ total_films: all.length }));
 }
 
-export { PAGE_SIZE };
+export { PAGE_SIZE, loadCatalog };

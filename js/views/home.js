@@ -1,9 +1,9 @@
-import { searchByGenre, searchByType, searchByEra, searchByColor, searchGratefulDead } from '../api.js';
+import { loadCatalog, searchGratefulDead } from '../api.js';
 import { InfiniteScroll } from '../scroll.js';
 import { playQueue, playAt } from '../player.js';
 import { loadSession } from '../queue.js';
 import { isSaved, toggleSaved } from '../library.js';
-import { posterThumb, coverGradient } from '../utils.js';
+import { posterThumb } from '../utils.js';
 import en from '../i18n/en.js';
 
 const GENRES = ['Horror', 'Crime', 'Comedy', 'Drama', 'Sci-Fi', 'Western', 'Animation', 'Documentary', 'Musical', 'Romance', 'Foreign'];
@@ -88,7 +88,6 @@ export async function render(app) {
     </section>
 
     <section id="results-section" class="mb-8 hidden">
-      <h2 id="results-title" class="section-label"></h2>
       <div id="sticky-count-bar">
         <p id="results-count" class="text-xs text-white/40"></p>
         <button id="btn-play-all"
@@ -109,8 +108,37 @@ export async function render(app) {
     </div>
   `;
 
+  // ── Filter state ─────────────────────────────────────────
+  const active = { genres: new Set(), types: new Set(), eras: new Set(), colors: new Set(), gd: false };
+  let englishOnly  = false;
   let activeScroll = null;
-  let englishOnly   = false;
+
+  // ── Chip toggle helpers ───────────────────────────────────
+  function _toggleChip(el, set, value) {
+    if (set.has(value)) { set.delete(value); el.classList.remove('chip-active'); el.classList.add('chip'); }
+    else                { set.add(value);    el.classList.add('chip-active');    el.classList.remove('chip'); }
+    _refresh();
+  }
+
+  // ── Wire chips ────────────────────────────────────────────
+  app.querySelectorAll('[data-genre]').forEach(el =>
+    el.addEventListener('click', () => _toggleChip(el, active.genres, el.dataset.genre)));
+
+  app.querySelectorAll('[data-type]').forEach(el =>
+    el.addEventListener('click', () => _toggleChip(el, active.types, el.dataset.type)));
+
+  app.querySelectorAll('[data-era]').forEach(el =>
+    el.addEventListener('click', () => _toggleChip(el, active.eras, el.dataset.era)));
+
+  app.querySelectorAll('[data-color]').forEach(el =>
+    el.addEventListener('click', () => _toggleChip(el, active.colors, el.dataset.color)));
+
+  app.querySelector('[data-gd]').addEventListener('click', function() {
+    active.gd = !active.gd;
+    this.classList.toggle('chip-active', active.gd);
+    this.classList.toggle('chip', !active.gd);
+    _refresh();
+  });
 
   const langBtn = app.querySelector('#btn-lang-toggle');
   langBtn.addEventListener('click', () => {
@@ -118,33 +146,37 @@ export async function render(app) {
     langBtn.setAttribute('aria-pressed', englishOnly);
     langBtn.classList.toggle('chip-active', englishOnly);
     langBtn.classList.toggle('chip', !englishOnly);
-    // re-fire the active chip if one is selected
-    const active = app.querySelector('.chip-active:not(#btn-lang-toggle)');
-    if (active) active.click();
+    _refresh();
   });
 
-  function _lang() { return englishOnly ? 'en' : ''; }
+  // ── Filter + render ───────────────────────────────────────
+  async function _refresh() {
+    const hasFilters = active.genres.size || active.types.size || active.eras.size || active.colors.size || active.gd || englishOnly;
 
-  function _wire(selector, fetchFn, labelFn) {
-    app.querySelectorAll(selector).forEach(el => {
-      el.addEventListener('click', () => {
-        if (!_setActive(el)) { activeScroll?.destroy(); activeScroll = null; return; }
-        activeScroll?.destroy();
-        activeScroll = _loadPaged(fetchFn(el), labelFn(el));
-      });
-    });
-  }
+    if (!hasFilters) {
+      activeScroll?.destroy(); activeScroll = null;
+      document.getElementById('results-section').classList.add('hidden');
+      document.getElementById('home-empty').classList.remove('hidden');
+      return;
+    }
 
-  _wire('[data-type]',  el => offset => searchByType(el.dataset.type, 20, offset, _lang()),   el => el.textContent.trim());
-  _wire('[data-genre]', el => offset => searchByGenre(el.dataset.genre, 20, offset, _lang()), el => el.textContent.trim());
-  _wire('[data-era]',   el => offset => searchByEra(el.dataset.era, 20, offset, _lang()),     el => el.textContent.trim());
-  _wire('[data-color]', el => offset => searchByColor(el.dataset.color, 20, offset, _lang()), el => el.textContent.trim());
+    let catalog = active.gd
+      ? (await searchGratefulDead(99999, 0)).films
+      : await loadCatalog();
 
-  app.querySelector('[data-gd]').addEventListener('click', function() {
-    if (!_setActive(this)) { activeScroll?.destroy(); activeScroll = null; return; }
+    if (active.genres.size)  catalog = catalog.filter(f => active.genres.has(f.genre));
+    if (active.types.size)   catalog = catalog.filter(f => active.types.has(f.type));
+    if (active.eras.size)    catalog = catalog.filter(f => active.eras.has(f.era));
+    if (active.colors.size)  catalog = catalog.filter(f => active.colors.has(f.color));
+    if (englishOnly)         catalog = catalog.filter(f => f.language === 'en');
+
+    const PAGE = 20;
     activeScroll?.destroy();
-    activeScroll = _loadPaged(offset => searchGratefulDead(20, offset), 'Grateful Dead');
-  });
+    activeScroll = _loadPaged(
+      offset => Promise.resolve({ films: catalog.slice(offset, offset + PAGE), total: catalog.length }),
+      catalog
+    );
+  }
 
   app.querySelectorAll('[data-recent]').forEach(el => {
     el.addEventListener('click', () => playQueue(recentRaw, parseInt(el.dataset.recent)));
@@ -155,43 +187,25 @@ export async function render(app) {
   });
 }
 
-function _setActive(el) {
-  const wasActive = el.classList.contains('chip-active');
-  document.querySelectorAll('[data-genre],[data-type],[data-era],[data-color],[data-gd]').forEach(b => {
-    b.classList.remove('chip-active'); b.classList.add('chip');
-  });
-  if (wasActive) {
-    document.getElementById('results-section')?.classList.add('hidden');
-    document.getElementById('home-empty')?.classList.remove('hidden');
-    return false;
-  }
-  el.classList.add('chip-active'); el.classList.remove('chip');
-  return true;
-}
-
-function _loadPaged(fetchFn, label) {
+function _loadPaged(fetchFn, allFilms) {
   const section = document.getElementById('results-section');
-  const title   = document.getElementById('results-title');
   const list    = document.getElementById('results-list');
   const status  = document.getElementById('results-status');
+  const bar     = document.getElementById('sticky-count-bar');
   document.getElementById('home-empty')?.classList.add('hidden');
-
   section.classList.remove('hidden');
-  title.textContent = label || '';
   list.innerHTML = _skeletons(8);
+  if (bar) bar.style.display = 'none';
 
   setTimeout(() => {
     const top = section.getBoundingClientRect().top + window.scrollY - 60;
     window.scrollTo({ top, behavior: 'smooth' });
   }, 50);
 
-  const bar = document.getElementById('sticky-count-bar');
-  if (bar) bar.style.display = 'none';
-
   let allLoaded = [];
 
   document.getElementById('btn-play-all')?.addEventListener('click', () => {
-    if (allLoaded.length) playQueue(allLoaded, 0);
+    if (allFilms?.length) playQueue(allFilms, 0);
   });
 
   const scroller = new InfiniteScroll({
