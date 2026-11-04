@@ -76,12 +76,8 @@ function _hideControls() {
 
 overlay.addEventListener('click', e => {
   if (e.target === seekEl || e.target === volumeEl) return;
-  // Let button clicks inside top bar and controls fire normally
-  if (e.target.closest('button')) { _showControls(); return; }
-  if (e.target.closest('#video-controls') || e.target.closest('#video-top-bar')) {
-    _showControls();
-    return;
-  }
+  // Let all clicks inside top bar and controls pass through untouched
+  if (e.target.closest('#video-top-bar') || e.target.closest('#video-controls')) return;
   // Tap on video area — show controls or handle double-tap seek
   _tapCount++;
   if (_tapCount === 1) {
