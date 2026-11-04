@@ -4,7 +4,14 @@ cleaning/review.csv
 cleaning/other.csv
 cleaning/other_ia_meta.csv
 cleaning/review-2.csv
+cleaning/still_other.csv
+cleaning/title_word_audit.txt
+cleaning/turkish_sample.txt
 backfill_duration_progress.json
+
+# Ingestion scratch exports
+backend/ingestion/export_horror_csv.py
+backend/ingestion/export_raw_csv.py
 
 # Environment & credentials — never commit
 .env
