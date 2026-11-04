@@ -111,7 +111,11 @@ function _flashZone(el, label) {
 videoEl.addEventListener('play',  () => { _setPlaying(true);  _showControls(); });
 videoEl.addEventListener('pause', () => { _setPlaying(false); _showControls(); });
 videoEl.addEventListener('ended', () => _onNext());
-videoEl.addEventListener('error', () => { console.warn('Video error — skipping'); _onNext(); });
+videoEl.addEventListener('error', () => {
+  if (!overlay.classList.contains('active')) return;
+  console.warn('Video error — skipping');
+  _onNext();
+});
 
 videoEl.addEventListener('timeupdate', () => {
   if (!videoEl.duration) return;
@@ -148,8 +152,8 @@ volumeEl.addEventListener('input', e => { e.stopPropagation(); videoEl.volume = 
 btnClose.addEventListener('click', e => {
   e.stopPropagation();
   videoEl.pause();
-  videoEl.src = '';
   overlay.classList.remove('active');
+  videoEl.src = '';
   document.title = 'Movies';
 });
 
