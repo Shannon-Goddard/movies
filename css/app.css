@@ -133,6 +133,7 @@ body.player-visible #bottom-nav { bottom: 5rem; }
   transition: opacity 0.3s;
 }
 #video-overlay.controls-hidden #video-controls { opacity: 0; pointer-events: none; }
+#video-controls button { cursor: pointer; }
 
 /* Top bar fade */
 #video-top-bar {
@@ -141,7 +142,8 @@ body.player-visible #bottom-nav { bottom: 5rem; }
   background: linear-gradient(rgba(0,0,0,0.7), transparent);
   transition: opacity 0.3s;
 }
-#video-overlay.controls-hidden #video-top-bar { opacity: 0; }
+#video-overlay.controls-hidden #video-top-bar { opacity: 0; pointer-events: none; }
+#video-top-bar button { cursor: pointer; }
 
 /* Double-tap seek zones */
 .seek-zone {
