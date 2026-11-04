@@ -83,13 +83,11 @@ overlay.addEventListener('click', e => {
   if (_tapCount === 1) {
     _tapTimer = setTimeout(() => {
       _tapCount = 0;
-      // Single tap — toggle controls
       overlay.classList.contains('controls-hidden') ? _showControls() : _hideControls();
     }, 250);
   } else if (_tapCount === 2) {
     clearTimeout(_tapTimer);
     _tapCount = 0;
-    // Double tap — seek ±10s based on side
     const x = e.clientX / window.innerWidth;
     if (x < 0.35) {
       videoEl.currentTime = Math.max(0, videoEl.currentTime - 10);
@@ -135,16 +133,17 @@ function _setPlaying(playing) {
 
 // ── Controls wiring ───────────────────────────────────────
 
-btnPlay.addEventListener('click', () => { togglePlay(); _showControls(); });
-btnNext.addEventListener('click', _onNext);
-btnPrev.addEventListener('click', _onPrev);
+btnPlay.addEventListener('click', e => { e.stopPropagation(); togglePlay(); _showControls(); });
+btnNext.addEventListener('click', e => { e.stopPropagation(); _onNext(); });
+btnPrev.addEventListener('click', e => { e.stopPropagation(); _onPrev(); });
 
-seekEl.addEventListener('input', () => {
+seekEl.addEventListener('input', e => {
+  e.stopPropagation();
   if (videoEl.duration) videoEl.currentTime = (seekEl.value / 100) * videoEl.duration;
   _showControls();
 });
 
-volumeEl.addEventListener('input', () => { videoEl.volume = volumeEl.value; });
+volumeEl.addEventListener('input', e => { e.stopPropagation(); videoEl.volume = volumeEl.value; });
 
 btnClose.addEventListener('click', e => {
   e.stopPropagation();
@@ -154,7 +153,8 @@ btnClose.addEventListener('click', e => {
   document.title = 'Movies';
 });
 
-btnFullscreen.addEventListener('click', () => {
+btnFullscreen.addEventListener('click', e => {
+  e.stopPropagation();
   if (!document.fullscreenElement) {
     overlay.requestFullscreen?.() || overlay.webkitRequestFullscreen?.();
   } else {
@@ -176,9 +176,6 @@ function _onPrev() {
 }
 
 // ── Google Cast ───────────────────────────────────────────
-// Cast SDK loads async via script tag in index.html.
-// When available, window.__onGCastApiAvailable fires and we init here.
-// REPLACE_WITH_CAST_APP_ID: register at https://cast.google.com/publish
 
 window['__onGCastApiAvailable'] = function(isAvailable) {
   if (!isAvailable) return;
@@ -189,7 +186,8 @@ window['__onGCastApiAvailable'] = function(isAvailable) {
   btnCast.classList.remove('hidden');
 };
 
-btnCast.addEventListener('click', async () => {
+btnCast.addEventListener('click', async e => {
+  e.stopPropagation();
   const ctx = cast.framework.CastContext.getInstance();
   const state = ctx.getCastState();
   if (state === cast.framework.CastState.NO_DEVICES_AVAILABLE) return;
