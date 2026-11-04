@@ -11,7 +11,7 @@ Usage:
   python ingest_ia.py --collection silent_films
   python ingest_ia.py --collection educational_films
   python ingest_ia.py --collection classic_tv
-  python ingest_ia.py --collection newsandpublicaffairs
+  python ingest_ia.py --collection live_concerts
   python ingest_ia.py --collection horror_and_suspense
 
 Options:
@@ -117,8 +117,11 @@ COLLECTION_QUERIES = {
     'silent_films':         'collection:silent_films AND mediatype:movies',
     'educational_films':    'mediatype:movies AND subject:educational',
     'classic_tv':           'collection:classic_tv AND mediatype:movies',
-    'newsandpublicaffairs': 'collection:newsandpublicaffairs AND mediatype:movies',
+    'live_concerts':         'mediatype:movies AND (subject:"live concert" OR subject:concert OR subject:"live music")',
     'horror_and_suspense':  'mediatype:movies AND (subject:horror OR subject:suspense)',
+    'film_noir':            'mediatype:movies AND (subject:"film noir" OR subject:noir)',
+    'serials':              'mediatype:movies AND (subject:serial OR subject:cliffhanger)',
+    'westerns':             'mediatype:movies AND (subject:western OR subject:cowboy)',
 }
 
 # ── Type mapping from collection ─────────────────────────
@@ -129,17 +132,23 @@ COLLECTION_TYPE_MAP = {
     'silent_films':          'feature',
     'educational_films':     'educational',
     'classic_tv':            'serial',
-    'newsandpublicaffairs':  'newsreel',
+    'live_concerts':          'concert',
     'horror_and_suspense':   'feature',
+    'film_noir':             'feature',
+    'serials':               'serial',
+    'westerns':              'feature',
 }
 
 # ── Main ingest ───────────────────────────────────────────
-def ingest(collection, limit=None, resume=False):
+def ingest(collection, limit=None, resume=False, start_id=None):
     resume_file = RESUME_FILE.format(collection=collection)
     base_query  = COLLECTION_QUERIES.get(collection, f'collection:{collection} AND mediatype:movies')
     query       = base_query
 
-    if resume and os.path.exists(resume_file):
+    if start_id:
+        print(f'Starting from: {start_id}')
+        query = f'({base_query}) AND identifier:[{start_id} TO z]'
+    elif resume and os.path.exists(resume_file):
         with open(resume_file) as f:
             last_id = json.load(f).get('last_id')
         if last_id:
@@ -149,9 +158,11 @@ def ingest(collection, limit=None, resume=False):
     params = {'fields': ['identifier','title','creator','date','subject','description','runtime'],
               'sorts': ['identifier asc']}
 
-    written = 0
-    deduped = 0
-    last_id = None
+    print(f'Querying IA: {query[:80]}...')
+    written   = 0
+    deduped   = 0
+    processed = 0
+    last_id   = None
 
     for result in search_items(query, **params):
         if limit and written >= limit:
@@ -161,11 +172,21 @@ def ingest(collection, limit=None, resume=False):
         if not identifier:
             continue
 
-        last_id = identifier
+        last_id    = identifier
+        processed += 1
+        if processed % 100 == 0:
+            with open(resume_file, 'w') as f:
+                json.dump({'last_id': last_id}, f)
 
         try:
-            item  = get_item(identifier)
-            meta  = item.metadata
+            for attempt in range(3):
+                try:
+                    item = get_item(identifier)
+                    break
+                except Exception:
+                    if attempt == 2: raise
+                    time.sleep(5 * (attempt + 1))
+            meta = item.metadata
             files = list(item.get_files(formats=['h.264', 'MPEG4', 'Ogg Video', '512Kb MPEG4']))
 
             # Pick best stream file
@@ -240,8 +261,6 @@ def ingest(collection, limit=None, resume=False):
                 written += 1
                 if written % 100 == 0:
                     print(f'  {written} written, {deduped} deduped...')
-                    with open(resume_file, 'w') as f:
-                        json.dump({'last_id': last_id}, f)
             except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
                 deduped += 1
 
@@ -258,6 +277,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--collection', required=True)
     parser.add_argument('--limit',   type=int, default=None)
-    parser.add_argument('--resume',  action='store_true')
+    parser.add_argument('--resume',   action='store_true')
+    parser.add_argument('--start-id', default=None)
     args = parser.parse_args()
-    ingest(args.collection, args.limit, args.resume)
+    ingest(args.collection, args.limit, args.resume, args.start_id)
