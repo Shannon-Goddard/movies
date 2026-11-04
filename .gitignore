@@ -1,3 +1,11 @@
+# Cleaning workstream — large files, local only
+cleaning/raw.csv
+cleaning/review.csv
+cleaning/other.csv
+cleaning/other_ia_meta.csv
+cleaning/review-2.csv
+backfill_duration_progress.json
+
 # Environment & credentials — never commit
 .env
 .env.*

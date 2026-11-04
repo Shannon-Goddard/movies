@@ -1,4 +1,4 @@
-const CACHE_NAME  = 'movies-shell-v3';
+const CACHE_NAME  = 'movies-shell-v4';
 const VIDEO_CACHE = 'movies-video-v1';
 const BASE = '/movies';
 
@@ -18,6 +18,7 @@ const SHELL_ASSETS = [
   `${BASE}/js/views/search.js`,
   `${BASE}/js/views/library.js`,
   `${BASE}/manifest.json`,
+  `${BASE}/data/index.json`,
 ];
 
 self.addEventListener('install', event => {
@@ -49,7 +50,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // API calls — always network
+  // API calls — skip, now served from local data/index.json
   if (url.hostname.includes('execute-api.amazonaws.com')) {
     event.respondWith(fetch(request));
     return;

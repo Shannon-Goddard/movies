@@ -44,25 +44,26 @@ def handler(event, context):
 
     params = event.get('queryStringParameters') or {}
     q      = params.get('q', '').strip()
-    genre  = params.get('genre', '').strip().lower()
-    ftype  = params.get('type', '').strip().lower()
-    era    = params.get('era', '').strip().lower()
-    color  = params.get('color', '').strip().lower()
-    limit  = min(int(params.get('limit', 20)), 50)
-    offset = int(params.get('offset', 0))
+    genre    = params.get('genre', '').strip().lower()
+    ftype    = params.get('type', '').strip().lower()
+    era      = params.get('era', '').strip().lower()
+    color    = params.get('color', '').strip().lower()
+    language = params.get('language', '').strip().lower()
+    limit    = min(int(params.get('limit', 20)), 50)
+    offset   = int(params.get('offset', 0))
 
     try:
         total = None
         if q:
             films = _full_scan_search(q, limit, offset)
         elif genre:
-            films, total = _gsi_query('genre-index', 'genre', genre, limit, offset)
+            films, total = _gsi_query('genre-index', 'genre', genre, limit, offset, language)
         elif ftype:
-            films, total = _gsi_query('type-index', 'type', ftype, limit, offset)
+            films, total = _gsi_query('type-index', 'type', ftype, limit, offset, language)
         elif era:
-            films, total = _gsi_query('era-index', 'era', era, limit, offset)
+            films, total = _gsi_query('era-index', 'era', era, limit, offset, language)
         elif color:
-            films, total = _gsi_query('color-index', 'color', color, limit, offset)
+            films, total = _gsi_query('color-index', 'color', color, limit, offset, language)
         else:
             films = _scan_all(limit, offset)
 
@@ -82,18 +83,26 @@ def handler(event, context):
         }
 
 
-def _gsi_query(index, key_name, value, limit, offset):
-    resp = table.query(
-        IndexName=index,
-        KeyConditionExpression=Key(key_name).eq(value),
-        Select='COUNT',
-    )
+def _gsi_query(index, key_name, value, limit, offset, language=''):
+    lang_filter = Attr('language').eq(language) if language else None
+    count_kwargs = {
+        'IndexName': index,
+        'KeyConditionExpression': Key(key_name).eq(value),
+        'Select': 'COUNT',
+    }
+    if lang_filter:
+        count_kwargs['FilterExpression'] = lang_filter
+    resp = table.query(**count_kwargs)
     total = resp.get('Count', 0)
-    resp2 = table.query(
-        IndexName=index,
-        KeyConditionExpression=Key(key_name).eq(value),
-        Limit=limit + offset,
-    )
+
+    query_kwargs = {
+        'IndexName': index,
+        'KeyConditionExpression': Key(key_name).eq(value),
+        'Limit': limit + offset,
+    }
+    if lang_filter:
+        query_kwargs['FilterExpression'] = lang_filter
+    resp2 = table.query(**query_kwargs)
     return resp2.get('Items', [])[offset:offset + limit], total
 
 

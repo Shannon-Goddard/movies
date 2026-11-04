@@ -1,4 +1,4 @@
-import { searchByGenre, searchByType, searchByEra, searchByColor } from '../api.js';
+import { searchByGenre, searchByType, searchByEra, searchByColor, searchGratefulDead } from '../api.js';
 import { InfiniteScroll } from '../scroll.js';
 import { playQueue, playAt } from '../player.js';
 import { loadSession } from '../queue.js';
@@ -6,17 +6,16 @@ import { isSaved, toggleSaved } from '../library.js';
 import { posterThumb, coverGradient } from '../utils.js';
 import en from '../i18n/en.js';
 
-const GENRES = ['Horror', 'Comedy', 'Drama', 'Documentary', 'Sci-Fi', 'Western', 'Romance', 'Adventure', 'Thriller', 'Mystery'];
+const GENRES = ['Horror', 'Crime', 'Comedy', 'Drama', 'Sci-Fi', 'Western', 'Animation', 'Documentary', 'Musical', 'Romance', 'Foreign'];
 
 const TYPES = [
-  { label: 'Feature Film', value: 'feature'    },
-  { label: 'Short Film',   value: 'short'       },
-  { label: 'Documentary',  value: 'documentary' },
-  { label: 'Cartoon',      value: 'cartoon'     },
-  { label: 'Serial',       value: 'serial'      },
-  { label: 'Newsreel',     value: 'newsreel'    },
-  { label: 'Educational',  value: 'educational' },
-  { label: 'Lecture',      value: 'lecture'     },
+  { label: 'Feature Film', value: 'feature'     },
+  { label: 'Short Film',   value: 'short'        },
+  { label: 'Cartoon',      value: 'cartoon'      },
+  { label: 'Serial',       value: 'serial'       },
+  { label: 'Concert',      value: 'concert'      },
+  { label: 'Newsreel',     value: 'newsreel'     },
+  { label: 'Educational',  value: 'educational'  },
 ];
 
 const ERAS = [
@@ -58,6 +57,19 @@ export async function render(app) {
       <h2 class="section-label">${en.home_genre}</h2>
       <div class="scroll-row">
         ${GENRES.map(g => `<button data-genre="${g.toLowerCase()}" class="chip">${g}</button>`).join('')}
+        <button data-gd class="chip flex items-center gap-1.5">
+          <img src="/movies/icons/gd-skull.png" alt="" class="w-4 h-4 object-contain" />
+          Grateful Dead
+        </button>
+      </div>
+    </section>
+
+    <section class="mb-4">
+      <div class="scroll-row items-center">
+        <button id="btn-lang-toggle" class="chip flex items-center gap-1.5" aria-pressed="false">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          English Only
+        </button>
       </div>
     </section>
 
@@ -98,6 +110,20 @@ export async function render(app) {
   `;
 
   let activeScroll = null;
+  let englishOnly   = false;
+
+  const langBtn = app.querySelector('#btn-lang-toggle');
+  langBtn.addEventListener('click', () => {
+    englishOnly = !englishOnly;
+    langBtn.setAttribute('aria-pressed', englishOnly);
+    langBtn.classList.toggle('chip-active', englishOnly);
+    langBtn.classList.toggle('chip', !englishOnly);
+    // re-fire the active chip if one is selected
+    const active = app.querySelector('.chip-active:not(#btn-lang-toggle)');
+    if (active) active.click();
+  });
+
+  function _lang() { return englishOnly ? 'en' : ''; }
 
   function _wire(selector, fetchFn, labelFn) {
     app.querySelectorAll(selector).forEach(el => {
@@ -109,10 +135,16 @@ export async function render(app) {
     });
   }
 
-  _wire('[data-type]',  el => offset => searchByType(el.dataset.type, 20, offset),  el => el.textContent);
-  _wire('[data-genre]', el => offset => searchByGenre(el.dataset.genre, 20, offset), el => el.textContent);
-  _wire('[data-era]',   el => offset => searchByEra(el.dataset.era, 20, offset),     el => el.textContent);
-  _wire('[data-color]', el => offset => searchByColor(el.dataset.color, 20, offset), el => el.textContent);
+  _wire('[data-type]',  el => offset => searchByType(el.dataset.type, 20, offset, _lang()),   el => el.textContent.trim());
+  _wire('[data-genre]', el => offset => searchByGenre(el.dataset.genre, 20, offset, _lang()), el => el.textContent.trim());
+  _wire('[data-era]',   el => offset => searchByEra(el.dataset.era, 20, offset, _lang()),     el => el.textContent.trim());
+  _wire('[data-color]', el => offset => searchByColor(el.dataset.color, 20, offset, _lang()), el => el.textContent.trim());
+
+  app.querySelector('[data-gd]').addEventListener('click', function() {
+    if (!_setActive(this)) { activeScroll?.destroy(); activeScroll = null; return; }
+    activeScroll?.destroy();
+    activeScroll = _loadPaged(offset => searchGratefulDead(20, offset), 'Grateful Dead');
+  });
 
   app.querySelectorAll('[data-recent]').forEach(el => {
     el.addEventListener('click', () => playQueue(recentRaw, parseInt(el.dataset.recent)));
@@ -125,7 +157,7 @@ export async function render(app) {
 
 function _setActive(el) {
   const wasActive = el.classList.contains('chip-active');
-  document.querySelectorAll('[data-genre],[data-type],[data-era],[data-color]').forEach(b => {
+  document.querySelectorAll('[data-genre],[data-type],[data-era],[data-color],[data-gd]').forEach(b => {
     b.classList.remove('chip-active'); b.classList.add('chip');
   });
   if (wasActive) {

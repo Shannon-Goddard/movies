@@ -10,34 +10,65 @@ Built by [Amazon Q](https://aws.amazon.com/q/developer/) alongside Shannon Godda
 
 | Layer | Status | Detail |
 |---|---|---|
-| DynamoDB table | ✅ Live | `movies`, `us-east-1` |
+| DynamoDB table | ✅ Live | `movies`, `us-east-1` — retained for scale reference |
 | GSIs | ✅ All 4 ACTIVE | genre-index, type-index, era-index, color-index |
-| Ingestion — short_films | ✅ Done | 2,819 written, 262 deduped |
-| Ingestion — silent_films | ✅ Done | 3,474 written, 1 deduped |
-| Ingestion — educational_films | 🔄 Running | ~9,900+ written |
-| Ingestion — newsandpublicaffairs | 🔄 Running | ~9,700+ written |
-| Ingestion — horror_and_suspense | 🔄 Running | ~9,100+ written |
-| Ingestion — animationandcartoons | 🔄 Running | ~9,600+ written |
-| Ingestion — classic_tv | 🔄 Resuming | ~9,800+ written |
-| Ingestion — feature_films | 🔄 Resuming | ~8,200+ written |
-| **Total catalog** | **61,719+ films (growing)** | Internet Archive — 8 collections |
-| Genre mapping | ✅ Done | 11 genres mapped from 12,000-item real tag sample |
+| Ingestion — all collections | ✅ Done | 167,018 raw rows across 11 collections |
+| **Total catalog** | **34,962 surviving** | 5 cleaning passes complete, Pass 6 running |
+| Genre mapping | ✅ Done | 11 genres — collection/type/title/language remaps applied |
 | Era detection | ✅ Done | silent / classic / vintage / modern from year |
 | Color detection | ✅ Done | bw / color / colorized from subject + description tags |
-| API — `/films/search` | ✅ Live | `q=`, `genre=`, `type=`, `era=`, `color=`, `limit=`, `offset=` |
-| API — `/stats` | ✅ Live | `total_films`, `by_type`, `by_era`, `by_color` |
-| Lambda memory | ✅ 256MB | Both Lambdas, 15s timeout |
-| Decimal serialization | ✅ Fixed | Custom JSON encoder handles DynamoDB Decimal types |
+| Language detection | ✅ Done | `en` / `foreign` — non-Latin chars + keyword scan |
+| API — `/films/search` | ✅ Live | Retained — see Phase 4 scaling notes |
+| API — `/stats` | ✅ Live | Retained — see Phase 4 scaling notes |
+| Lambda — movies-search | ✅ Deployed | `language=` filter support, 256MB, 15s |
+| **Data layer** | **⚡ Pivoted** | Static `data/index.json` — see pivot note below |
 | Frontend PWA | ✅ Live | `https://shannon-goddard.github.io/movies/` |
-| Icons | ✅ Done | Real PNG icons — icon-192, icon-512, logo-192, logo-512, preview 1200×630 |
-| Service worker | ✅ Live | Shell cache + video stream cache |
+| Icons | ✅ Done | icon-192/512, logo-192/512 (maskable, black bg), gd-skull, preview 1200×630 |
+| PWA manifest | ✅ Updated | `logo-*.png` registered as `maskable` — black bg on home screen install |
+| Filter chips — Genre | ✅ Updated | Horror, Crime, Comedy, Drama, Sci-Fi, Western, Animation, Documentary, Musical, Romance, Foreign |
+| Filter chips — Type | ✅ Updated | Feature Film, Short, Cartoon, Serial, Concert, Newsreel, Educational |
+| Language toggle | ✅ Live | English Only — client-side filter on `language` field |
+| Grateful Dead chip | ✅ Live | Skull icon chip, client-side title filter, 15 concerts |
+| Service worker | ✅ Updated | Preloads `data/index.json` on install — zero latency after first visit |
 | Google Cast | ✅ Wired | App ID `20706015`, unpublished — test devices only |
 | Google Analytics | ✅ Live | GA4, anonymized |
 | Google Search Console | ✅ Verified | Sitemap submitted |
 | Legal pages | ✅ Done | about, privacy, terms, licenses |
 
-**API base URL:** `https://3m0629omkh.execute-api.us-east-1.amazonaws.com/v1`
 **Frontend:** `https://shannon-goddard.github.io/movies/`
+
+---
+
+## ⚡ Architecture Pivot — DynamoDB → Static JSON
+
+### Why we pivoted
+
+At 34,962 rows the catalog is small enough that a serverless database is the wrong tool. The pivot was driven by three things:
+
+1. **Cost** — DynamoDB PAY_PER_REQUEST charges on every chip tap, every scroll page, every search. A static file is free forever.
+2. **Speed** — Lambda cold starts + API Gateway + DynamoDB = 3 hops per filter. A cached JSON file = 0 hops after the first visit.
+3. **UX** — Once `data/index.json` is loaded into memory, every filter, search, and language toggle is instant array operations. No round trips, no loading states, no pagination latency.
+
+### How it works
+
+```
+[ First visit ]
+  Service worker installs → preloads data/index.json into cache
+
+[ User taps a chip ]
+  api.js checks memory cache → already loaded → filter array → slice [0..20] → render
+  User scrolls → slice [20..40] → append  (no fetch, pure JS)
+
+[ Subsequent visits ]
+  Service worker serves index.json from cache → instant
+```
+
+### File size
+- Uncompressed: ~15.6MB
+- Gzipped (GitHub Pages CDN): ~3–4MB — one-time cost, then cached
+
+### When to switch back to DynamoDB
+If the catalog grows beyond ~150k rows or requires user-generated data (ratings, comments, play counts), the AWS infrastructure is already live and documented below. Flip `api.js` back to the Lambda endpoints and it works immediately.
 
 ---
 
@@ -45,25 +76,25 @@ Built by [Amazon Q](https://aws.amazon.com/q/developer/) alongside Shannon Godda
 
 ```
 [ Data Source ]
-  Internet Archive (8 collections — public domain + CC-licensed films)
+  Internet Archive (11 collections — public domain + CC-licensed films)
        │
        ▼
-[ Ingestion Layer ]  ← resumable, last_id checkpointing every 100 writes
-       │             ← genre map built from 12,000-item real tag sample
-       │             ← era + color detected at ingest time
+[ Ingestion + Cleaning ]  ← resumable, checkpointed, 6-pass cleaning workstream
+       │                  ← genre/type/language remaps, dedup, year filter
        ▼
-[ AWS DynamoDB ] ──────────────────> Film index (film_id PK + 4 GSIs)
-       │
+[ data/index.json ]  ──────────────> Static file, GitHub Pages CDN
+       │                          preloaded by service worker on install
        ▼
-[ AWS API Gateway + Lambda ] ──────> Serverless REST API
-       │
-       ▼
-[ GitHub Pages (Frontend) ] ────────> PWA / SPA Video Player
-       │
+[ GitHub Pages (Frontend) ] ───────> PWA / SPA Video Player
+       │                          all filtering/search = client-side JS
        ├──> Casual viewers       (browse by genre, era, color)
        ├──> Film enthusiasts     (search by title/director, watchlist)
        ├──> Mobile users         (PWA install, fullscreen, tap controls)
        └──> TV viewers           (Google Cast to Chromecast)
+
+[ AWS — retained for scale ]
+  DynamoDB `movies` + Lambda + API Gateway — live, dormant
+  Flip api.js BASE_URL back to Lambda endpoints to reactivate
 ```
 
 ---
@@ -82,6 +113,7 @@ Built by [Amazon Q](https://aws.amazon.com/q/developer/) alongside Shannon Godda
   "era_label":    "Silent Era",
   "color":        "bw",
   "color_label":  "B&W",
+  "language":     "en",
   "stream_url":   "https://archive.org/download/...",
   "poster_url":   "https://archive.org/services/img/...",
   "source":       "internet_archive",
@@ -103,10 +135,10 @@ Built by [Amazon Q](https://aws.amazon.com/q/developer/) alongside Shannon Godda
 
 | Index | Hash Key | Range Key | Used By |
 |---|---|---|---|
-| `genre-index` | `genre` | `film_id` | `/films/search?genre=` |
-| `type-index` | `type` | `film_id` | `/films/search?type=` |
-| `era-index` | `era` | `film_id` | `/films/search?era=` |
-| `color-index` | `color` | `film_id` | `/films/search?color=` |
+| `genre-index` | `genre` | `film_id` | `/films/search?genre=` + optional `language=` filter |
+| `type-index` | `type` | `film_id` | `/films/search?type=` + optional `language=` filter |
+| `era-index` | `era` | `film_id` | `/films/search?era=` + optional `language=` filter |
+| `color-index` | `color` | `film_id` | `/films/search?color=` + optional `language=` filter |
 
 ---
 
@@ -165,7 +197,7 @@ Items with no matching tags are stored as `genre: other`.
 - Watchlist — localStorage, `movies_*` keys
 - Queue management — session persistence
 - Infinite scroll — IntersectionObserver sentinel
-- Filter chips — Genre, Type, Era, Color
+- Filter chips — Genre (11), Type (7), Era, Color, Language toggle, Grateful Dead chip
 - Poster grid — 2/3 aspect ratio cards
 - Keyboard shortcuts — Space, ←/→, F, Escape
 - Media Session API — lock screen / hardware controls
@@ -247,27 +279,24 @@ Items with no matching tags are stored as `genre: other`.
 
 ---
 
-### Phase 8: Catalog Cleaning 🔜 Pending (after all ingestion complete)
+### Phase 8: Catalog Cleaning ✅ In Progress
 
-Same 4-pass pattern as music project (`music/cleaning/`). Scripts to be created in `backend/cleaning/`.
+Full workstream in `cleaning/`. Documented in `cleaning/CLEANING.md`.
 
-**Pass 1 — Bad stream URLs**
-- `probe_bad_urls.py` — identify non-ASCII characters in stream_url paths
-- `clean_stream_url.py` — remove items with non-Latin or accented Latin filenames that will fail in the video player
+| Pass | Script | Status | Result |
+|---|---|---|---|
+| Pass 1 — Duration backfill | `backfill_duration.py` | ✅ Done | 88,151 filled (99.8%) |
+| Pass 2 — Junk removal | `junk_removal.py` | ✅ Done | 115,531 flagged, 51,487 surviving |
+| Pass 3 — Year filter (>=1990) | `reset_and_filter.py` | ✅ Done | 47,829 surviving |
+| Pass 3b — Trailer flag | `flag_title_keywords.py` | ✅ Done | 46,485 surviving |
+| Pass 4 — Genre/type remap | `remap_genres.py` | ✅ Done | 23,089 remapped |
+| Pass 4b — Title keyword remap | `remap_title_keywords.py` | ✅ Done | 1,471 remapped |
+| Pass 5 — Dedup + year backfill | `pass5_other_cleanup.py` | ✅ Done | 4,414 dupes removed, 34,962 surviving |
+| Pass 6 — IA description fetch | `fetch_ia_descriptions.py` | 🔄 Running | Fetching for 7,293 `other` rows (~60 min) |
 
-**Pass 2 — Genre remap**
-- `probe_collection_genre.py` — scan items where `genre = other`, group by collection, show counts
-- `remap_collection_genre.py` — SET genre from collection for all `other` items (e.g. `horror_and_suspense` → `horror`)
-- `probe_subgenre.py` — audit subject tags within each collection to build subgenre buckets
-- `apply_subgenres.py` — write `subgenre` field based on subject tag mapping + collection fallback
+**Current catalog:** 34,962 surviving. `other` at 20.9% — pending Pass 6 remap.
 
-**Pass 3 — Duplicates**
-- `probe_dupes.py` — scan for duplicate `stream_url` values (film_id = md5(stream_url) should prevent true dupes but verify)
-- `probe_title_dupes.py` — same title + year combinations across collections
-
-**Pass 4 — Duration**
-- `probe_duration.py` — missing and zero duration_sec by collection
-- `clean_duration.py` — null out zero values, accept missing gaps (display-only field)
+**Next:** Pass 6 completes → remap `other` from descriptions → write `clean.csv` → push to DynamoDB.
 
 ---
 
@@ -299,6 +328,8 @@ Same 4-pass pattern as music project (`music/cleaning/`). Scripts to be created 
 | director field as list | ✅ Fixed | Normalized to string at ingest time |
 | subject field as non-string | ✅ Fixed | `_resolve_genre()` and `_color()` skip non-string entries |
 | Cast chrome-extension error in browser | ✅ Expected | Cast SDK only activates when a Chromecast is on the network |
+| `logo-*.png` white bg on home screen install | ✅ Fixed | Added as `maskable` purpose in manifest.json |
+| `language=` filter not supported in Lambda | ✅ Fixed | Added `Attr('language').eq()` filter to `_gsi_query`, redeployed |
 
 ---
 
@@ -321,13 +352,14 @@ movies/
 │   ├── movies-logo.png             # Source — black bg
 │   ├── icon-192.png                # PWA + favicon
 │   ├── icon-512.png                # PWA splash
-│   ├── logo-192.png                # Home screen icon
-│   ├── logo-512.png                # Home screen icon large
+│   ├── logo-192.png                # Home screen icon (maskable, black bg)
+│   ├── logo-512.png                # Home screen icon large (maskable, black bg)
+│   ├── gd-skull.png                # Grateful Dead chip icon
 │   └── preview.png                 # OG image 1200×630
 │
 ├── js/
 │   ├── app.js                      # SPA router (hash-based)
-│   ├── api.js                      # API client — BASE_URL, all search functions
+│   ├── api.js                      # API client — BASE_URL, all search functions + language param
 │   ├── player.js                   # Video player — tap controls, Cast SDK, keyboard shortcuts
 │   ├── queue.js                    # Queue management, session persistence
 │   ├── library.js                  # Watchlist — localStorage movies_* keys
@@ -336,7 +368,7 @@ movies/
 │   ├── i18n/
 │   │   └── en.js                   # String constants
 │   └── views/
-│       ├── home.js                 # Filter chips + poster grid
+│       ├── home.js                 # Filter chips — Genre (11), Type (7), Era, Color, Language toggle, GD chip
 │       ├── search.js               # Search results
 │       └── library.js              # Watchlist view
 │

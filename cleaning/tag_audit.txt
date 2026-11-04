@@ -1,0 +1,123 @@
+Tag Audit — surviving rows only (exclude != true)
+Total surviving: 33,713
+
+==================================================
+GENRE
+==================================================
+  horror                 8,661  (25.7%)
+  action                 6,163  (18.3%)
+  other                  3,513  (10.4%)
+  documentary            3,170  (9.4%)
+  animation              2,479  (7.4%)
+  crime                  2,330  (6.9%)
+  musical                2,236  (6.6%)
+  drama                  1,487  (4.4%)
+  comedy                 1,386  (4.1%)
+  western                  919  (2.7%)
+  educational              713  (2.1%)
+  sci-fi                   420  (1.2%)
+  romance                  236  (0.7%)
+
+==================================================
+TYPE
+==================================================
+  feature               20,551  (61.0%)
+  serial                 6,638  (19.7%)
+  cartoon                2,133  (6.3%)
+  concert                1,609  (4.8%)
+  short                  1,520  (4.5%)
+  educational              827  (2.5%)
+  newsreel                 435  (1.3%)
+
+==================================================
+COLLECTION
+==================================================
+  feature_films                    8,308  (24.6%)
+  horror_and_suspense              7,944  (23.6%)
+  classic_tv                       5,970  (17.7%)
+  silent_films                     2,812  (8.3%)
+  animationandcartoons             2,133  (6.3%)
+  live_concerts                    1,609  (4.8%)
+  short_films                      1,520  (4.5%)
+  educational_films                  827  (2.5%)
+  westerns                           792  (2.3%)
+  film_noir                          695  (2.1%)
+  serials                            668  (2.0%)
+  newsandpublicaffairs               435  (1.3%)
+
+==================================================
+GENRE BREAKDOWN BY TYPE
+==================================================
+
+  [cartoon]
+    animation              2,133
+
+  [concert]
+    musical                1,535
+    documentary               40
+    drama                     12
+    educational               12
+    animation                  5
+    comedy                     2
+    horror                     2
+    sci-fi                     1
+
+  [educational]
+    educational              632
+    documentary              145
+    musical                   15
+    animation                 11
+    drama                      9
+    comedy                     4
+    sci-fi                     4
+    horror                     3
+    action                     3
+    crime                      1
+
+  [feature]
+    horror                 8,430
+    other                  3,371
+    crime                  2,114
+    documentary            1,595
+    drama                  1,284
+    western                  911
+    comedy                   898
+    action                   779
+    musical                  374
+    sci-fi                   287
+    animation                277
+    romance                  216
+    educational               15
+
+  [newsreel]
+    documentary              431
+    educational                3
+    musical                    1
+
+  [serial]
+    action                 5,008
+    comedy                   382
+    documentary              381
+    musical                  221
+    horror                   177
+    drama                    163
+    crime                    142
+    sci-fi                    93
+    educational               36
+    animation                 32
+    romance                    3
+
+  [short]
+    documentary              578
+    action                   373
+    other                    142
+    comedy                   100
+    musical                   90
+    crime                     73
+    horror                    49
+    sci-fi                    35
+    animation                 21
+    drama                     19
+    romance                   17
+    educational               15
+    western                    8
