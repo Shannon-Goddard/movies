@@ -76,6 +76,8 @@ function _hideControls() {
 
 overlay.addEventListener('click', e => {
   if (e.target === seekEl || e.target === volumeEl) return;
+  // Let button clicks inside top bar and controls fire normally
+  if (e.target.closest('button')) { _showControls(); return; }
   if (e.target.closest('#video-controls') || e.target.closest('#video-top-bar')) {
     _showControls();
     return;
