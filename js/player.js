@@ -146,7 +146,8 @@ seekEl.addEventListener('input', () => {
 
 volumeEl.addEventListener('input', () => { videoEl.volume = volumeEl.value; });
 
-btnClose.addEventListener('click', () => {
+btnClose.addEventListener('click', e => {
+  e.stopPropagation();
   videoEl.pause();
   videoEl.src = '';
   overlay.classList.remove('active');
