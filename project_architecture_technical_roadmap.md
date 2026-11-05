@@ -30,7 +30,7 @@ Built by [Amazon Q](https://aws.amazon.com/q/developer/) alongside Shannon Godda
 | Language toggle | ✅ Live | English Only — client-side filter on `language` field |
 | Grateful Dead chip | ✅ Live | Skull icon chip, client-side title filter, 15 concerts |
 | Service worker | ✅ Updated | Preloads `data/index.json` on install — zero latency after first visit |
-| Google Cast | ✅ Wired | App ID `20706015`, unpublished — test devices only |
+| Google Cast | ✅ Published | App ID `20706015`, live — all Chromecast devices |
 | Google Analytics | ✅ Live | GA4, anonymized |
 | Google Search Console | ✅ Verified | Sitemap submitted |
 | Legal pages | ✅ Done | about, privacy, terms, licenses |
@@ -205,20 +205,19 @@ Items with no matching tags are stored as `genre: other`.
 
 ---
 
-### Phase 4: Production Hardening 🔜 Pending
+### Phase 4: Production Hardening ✅ Complete
 
-- **4.1** WAF rate limiting — attach WebACL to API Gateway stage `v1`
-- **4.2** CORS lock — restrict `Access-Control-Allow-Origin` from `*` to `https://shannon-goddard.github.io`
-- **4.3** CloudWatch alarms — Lambda error rate, 5xx rate
-- **4.4** Publish Google Cast app — currently unpublished, test devices only
+- **4.1** ~~WAF rate limiting~~ — N/A, no API Gateway (static JSON)
+- **4.2** ~~CORS lock~~ — N/A, no API Gateway
+- **4.3** ~~CloudWatch alarms~~ — N/A, no Lambda in active use
+- **4.4** Publish Google Cast app — ✅ Published, live on all Chromecast devices
 
 ---
 
 ### Phase 5: Automated Lifecycle Maintenance 🔜 Pending
 
-- **5.1** Monthly ingestion cron — EventBridge rule → Lambda trigger to pick up new IA uploads
-- **5.2** Dead link health checker — periodic HEAD requests on stream_urls, mark dead items
-- **5.3** Resume on failure — EventBridge retry on cursor expiry errors
+- **5.1** Dead link health checker — periodic HEAD requests on stream_urls, flag dead items in index.json
+- **5.2** ~~Monthly ingestion cron~~ — N/A, static JSON; re-run cleaning pipeline manually when needed
 
 ---
 
@@ -229,53 +228,23 @@ Items with no matching tags are stored as `genre: other`.
 | Continue watching | Save position every 10s, resume bar on home |
 | Recently watched | `movies_recent` localStorage, capped at 20 |
 | Subtitle support | IA items sometimes include .srt/.vtt — parse and load via `<track>` |
-| Custom Cast receiver | Register branded receiver for subtitle support on TV |
 | Director pages | Drill-down from film card → all films by director |
-| Collections view | Browse by IA collection |
 | Download button | `stream_url` with `download` attr for public domain items |
-| **Subgenre system** | Add `subgenre` field — map horror tags to Supernatural, Slasher, Zombie, etc. Items with `genre: other` get subgenre from collection (e.g. `horror_and_suspense` → `subgenre: horror`). Netflix-style horizontal rows per subgenre on home screen. |
-| **Collection-based genre remap** | One-time script — scan all items where `genre = other`, remap genre from collection (e.g. `horror_and_suspense` → `genre: horror`). Run after all ingestion complete. |
+| **Recommendations** | GA4 watch data → surface trending/popular films per genre on home screen |
 
 ---
 
-### Phase 7: UX Restructure 🔜 Pending
-
-**Top-level navigation — 5 content buckets:**
-
-| Tab | Collections | Type value |
-|---|---|---|
-| Movies | feature_films, short_films, silent_films, horror_and_suspense, film_noir, westerns | feature, short |
-| TV | classic_tv, serials | serial |
-| Cartoons | animationandcartoons | cartoon |
-| News | newsandpublicaffairs | newsreel |
-| Education | educational_films | educational |
-
-**Subcategory rows per tab (Netflix-style horizontal swipe):**
-- Movies → Black & White, Silent Films, Shorts, Horror, Comedy, Westerns, Romance, Noir, Sci-Fi, Action, Drama
-- TV → subcategories TBD after subject tag audit
-- Cartoons → subcategories TBD after subject tag audit
-- News → subcategories TBD after subject tag audit
-- Education → subcategories TBD after subject tag audit
-
-**Tag-based curated rows** (driven by IA subject tags, built during cleaning pass):
-- Horror → Vampires, Zombies, Ghosts, Creature Features, Slasher
-- Western → Cowboys, Outlaws, Spaghetti Westerns
-- Sci-Fi → Aliens, Space, Mad Scientists, Giant Monsters
-- Tag vocabulary finalized after high-frequency subject tag scan across full catalog
-
-**Other UX enhancements:**
+### Phase 7: UX Enhancements 🔜 Pending
 
 | Feature | Notes |
 |---|---|
 | **Random film button** | "I'm feeling lucky" — picks a random film from the full catalog |
-| **Trending / Most played** | Track play counts in DynamoDB, surface top films per genre |
-| **New additions row** | Filter by `ingested_at` descending — recently added films |
 | **Decade filter** | 1920s, 1930s, 1940s etc. More granular than era chips |
 | **Duration filter** | Under 30 min / 30–90 min / 90+ min |
 | **Director page** | Tap director name → all films by that director |
 | **Watch history** | Auto-populated, separate from watchlist, last 5 in continue watching row |
 | **Share / deep link** | `#/film/{film_id}` route, share button on film card |
-| **Content warning** | Dismissible first-visit banner + notice on about.html. Add `mature` flag during cleaning pass with UI filter toggle. |
+| **Content warning** | Dismissible first-visit banner + notice on about.html |
 
 ---
 
