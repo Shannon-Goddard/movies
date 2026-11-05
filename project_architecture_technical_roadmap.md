@@ -13,7 +13,7 @@ Built by [Amazon Q](https://aws.amazon.com/q/developer/) alongside Shannon Godda
 | DynamoDB table | ✅ Live | `movies`, `us-east-1` — retained for scale reference |
 | GSIs | ✅ All 4 ACTIVE | genre-index, type-index, era-index, color-index |
 | Ingestion — all collections | ✅ Done | 167,018 raw rows across 11 collections |
-| **Total catalog** | **34,962 surviving** | 5 cleaning passes complete, Pass 6 running |
+| **Total catalog** | **25,523 surviving** | 7 cleaning passes complete |
 | Genre mapping | ✅ Done | 11 genres — collection/type/title/language remaps applied |
 | Era detection | ✅ Done | silent / classic / vintage / modern from year |
 | Color detection | ✅ Done | bw / color / colorized from subject + description tags |
@@ -43,7 +43,7 @@ Built by [Amazon Q](https://aws.amazon.com/q/developer/) alongside Shannon Godda
 
 ### Why we pivoted
 
-At 34,962 rows the catalog is small enough that a serverless database is the wrong tool. The pivot was driven by three things:
+At 25,523 rows the catalog is small enough that a serverless database is the wrong tool. The pivot was driven by three things:
 
 1. **Cost** — DynamoDB PAY_PER_REQUEST charges on every chip tap, every scroll page, every search. A static file is free forever.
 2. **Speed** — Lambda cold starts + API Gateway + DynamoDB = 3 hops per filter. A cached JSON file = 0 hops after the first visit.
@@ -292,11 +292,10 @@ Full workstream in `cleaning/`. Documented in `cleaning/CLEANING.md`.
 | Pass 4 — Genre/type remap | `remap_genres.py` | ✅ Done | 23,089 remapped |
 | Pass 4b — Title keyword remap | `remap_title_keywords.py` | ✅ Done | 1,471 remapped |
 | Pass 5 — Dedup + year backfill | `pass5_other_cleanup.py` | ✅ Done | 4,414 dupes removed, 34,962 surviving |
-| Pass 6 — IA description fetch | `fetch_ia_descriptions.py` | 🔄 Running | Fetching for 7,293 `other` rows (~60 min) |
+| Pass 6 — IA description fetch | `fetch_ia_descriptions.py` | ✅ Done | `other` genre remapped |
+| Pass 7 — Duration quality filter | `filter_duration.py` | ✅ Done | 8,190 removed, 25,523 surviving |
 
-**Current catalog:** 34,962 surviving. `other` at 20.9% — pending Pass 6 remap.
-
-**Next:** Pass 6 completes → remap `other` from descriptions → write `clean.csv` → push to DynamoDB.
+**Current catalog:** 25,523 surviving.
 
 ---
 

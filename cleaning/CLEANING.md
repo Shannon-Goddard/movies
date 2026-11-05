@@ -193,33 +193,7 @@ For surviving rows still missing `year`, extract via regex from title.
 
 ## Current State
 
-**Surviving rows: 34,962**
-
-| Genre | Count | % |
-|---|---|---|
-| horror | 8,495 | 24.3% |
-| other | 7,293 | 20.9% |
-| action | 6,115 | 17.5% |
-| documentary | 2,604 | 7.4% |
-| animation | 2,239 | 6.4% |
-| musical | 2,035 | 5.8% |
-| crime | 1,712 | 4.9% |
-| comedy | 1,236 | 3.5% |
-| drama | 1,204 | 3.4% |
-| western | 833 | 2.4% |
-| educational | 694 | 2.0% |
-| sci-fi | 383 | 1.1% |
-| romance | 119 | 0.3% |
-
-| Type | Count | % |
-|---|---|---|
-| feature | 21,615 | 61.8% |
-| serial | 6,638 | 19.0% |
-| cartoon | 2,133 | 6.1% |
-| short | 1,705 | 4.9% |
-| concert | 1,609 | 4.6% |
-| educational | 827 | 2.4% |
-| newsreel | 435 | 1.2% |
+**Surviving rows: 25,523** (after Pass 7 duration filter)
 
 **Grateful Dead concerts:** 15 surviving.
 
@@ -238,6 +212,46 @@ Fetches `description` and `subject` tags from IA metadata API for each `other` r
 Once complete, a keyword scanner will run against `description` + `subjects` fields to remap genres — far more reliable signal than title scanning.
 
 ---
+
+### Pass 7 — Duration Quality Filter (index.json)
+
+**Script:** `cleaning/scripts/filter_duration.py`
+**Input:** `data/index.json` (33,713 rows post-patch)
+**Output:** `data/index.json` filtered in place
+
+Applied minimum duration thresholds by type to remove clips, fragments, and trailers that survived earlier passes:
+
+| Type | Threshold | Rationale |
+|---|---|---|
+| `short` | ≥ 180s (3 min) | A short under 3 min is a clip |
+| `cartoon` | ≥ 300s (5 min) | Classic shorts (Looney Tunes, Tom & Jerry) run 6–8 min |
+| everything else | ≥ 600s (10 min) | Features/concerts/serials under 10 min are fragments |
+
+Rows with `duration_sec = 0` or missing are retained (37 films with no duration anywhere).
+
+**Results:** ✅ Complete
+
+| | Count |
+|---|---|
+| Before | 33,713 |
+| Removed | 8,190 |
+| After | 25,523 |
+
+Breakdown of removed rows by type:
+
+| Type | Removed |
+|---|---|
+| feature | 5,240 |
+| concert | 832 |
+| serial | 699 |
+| cartoon | 658 |
+| educational | 376 |
+| newsreel | 257 |
+| short | 128 |
+
+---
+
+## Filter Chips
 
 ## Filter Chips (Finalized)
 
@@ -264,7 +278,7 @@ Once complete, a keyword scanner will run against `description` + `subjects` fie
 | `scripts/remap_genres.py` | Pass 4 — collection/type/language remaps |
 | `scripts/remap_title_keywords.py` | Pass 4b — title keyword genre scan |
 | `scripts/pass5_other_cleanup.py` | Pass 5 — numeric flag + near-dupe dedup + year backfill |
-| `scripts/tag_audit.py` | Audit tool — genre/type/collection counts for surviving rows |
+| `scripts/filter_duration.py` | Pass 7 — duration quality filter on index.json | — genre/type/collection counts for surviving rows |
 | `scripts/title_word_audit.py` | Audit tool — top 100 words in surviving titles |
 | `scripts/export_review_csv.py` | Export surviving rows to review.csv |
 | `scripts/export_other_csv.py` | Export other-genre surviving rows to other.csv |
