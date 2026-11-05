@@ -1,4 +1,4 @@
-const CACHE_NAME  = 'movies-shell-v8';
+const CACHE_NAME  = 'movies-shell-v8'; // ⚠️ Bump version whenever any file in js/ or css/ changes
 const VIDEO_CACHE = 'movies-video-v1';
 const BASE = '/movies';
 
