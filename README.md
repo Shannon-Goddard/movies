@@ -1,6 +1,6 @@
 ![header](icons/header.png)
 
-[![Live Demo](https://img.shields.io/badge/live_demo-FF5F15?logo=github)](https://shannon-goddard.github.io/movies/)
+[![Live Demo](https://img.shields.io/badge/live_demo-000000?logo=github)](https://shannon-goddard.github.io/movies/)
 [![Catalog](https://img.shields.io/badge/25%2C523_films-FFFFE0)](data/index.json)
 [![License](https://img.shields.io/badge/license-MIT-5B7C99)](LICENSE)
 [![PWA](https://img.shields.io/badge/PWA-ready-b1430c?logo=pwa)](https://shannon-goddard.github.io/movies/)
