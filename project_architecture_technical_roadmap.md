@@ -31,6 +31,9 @@ Built by [Amazon Q](https://aws.amazon.com/q/developer/) alongside Shannon Godda
 | Grateful Dead chip | ✅ Live | Skull icon chip, client-side title filter, 15 concerts |
 | Service worker | ✅ Updated | Preloads `data/index.json` on install — zero latency after first visit |
 | Google Cast | ✅ Published | App ID `20706015`, live — all Chromecast devices |
+| Share / deep link | ✅ Live | `#/film/{film_id}` route + share button on film cards |
+| Continue watching | ✅ Live | Resume bar, position saved every 10s |
+| Recently watched | ✅ Live | `movies_recent` localStorage, capped at 20 |
 | Google Analytics | ✅ Live | GA4, anonymized |
 | Google Search Console | ✅ Verified | Sitemap submitted |
 | Legal pages | ✅ Done | about, privacy, terms, licenses |
@@ -214,37 +217,35 @@ Items with no matching tags are stored as `genre: other`.
 
 ---
 
-### Phase 5: Automated Lifecycle Maintenance 🔜 Pending
+### Phase 5: Automated Lifecycle Maintenance 🔜 Future
 
-- **5.1** Dead link health checker — periodic HEAD requests on stream_urls, flag dead items in index.json
+- **5.1** Dead link health checker — periodic HEAD requests on `stream_url` for all index entries, flag and remove dead items, re-export `index.json`
 - **5.2** ~~Monthly ingestion cron~~ — N/A, static JSON; re-run cleaning pipeline manually when needed
 
 ---
 
-### Phase 6: Feature Expansion 🔜 Pending
+### Phase 6: Feature Expansion
 
-| Feature | Notes |
-|---|---|
-| Continue watching | Save position every 10s, resume bar on home |
-| Recently watched | `movies_recent` localStorage, capped at 20 |
-| Subtitle support | IA items sometimes include .srt/.vtt — parse and load via `<track>` |
-| Director pages | Drill-down from film card → all films by director |
-| Download button | `stream_url` with `download` attr for public domain items |
-| **Recommendations** | GA4 watch data → surface trending/popular films per genre on home screen |
+| Feature | Status | Notes |
+|---|---|---|
+| Continue watching | ✅ Live | Resume bar, position saved every 10s |
+| Recently watched | ✅ Live | `movies_recent` localStorage, capped at 20 |
+| Share / deep link | ✅ Live | `#/film/{film_id}` route + share button on film cards |
+| Subtitle support | 🔜 Future | IA items sometimes include .srt/.vtt — parse and load via `<track>` |
+| Director pages | 🔜 Future | Drill-down from film card → all films by director |
+| Download button | 🔜 Future | `stream_url` with `download` attr for public domain items |
+| Recommendations | 🔜 Future | GA4 watch data → surface trending/popular films per genre on home screen |
 
 ---
 
-### Phase 7: UX Enhancements 🔜 Pending
+### Phase 7: UX Enhancements
 
-| Feature | Notes |
-|---|---|
-| **Random film button** | "I'm feeling lucky" — picks a random film from the full catalog |
-| **Decade filter** | 1920s, 1930s, 1940s etc. More granular than era chips |
-| **Duration filter** | Under 30 min / 30–90 min / 90+ min |
-| **Director page** | Tap director name → all films by that director |
-| **Watch history** | Auto-populated, separate from watchlist, last 5 in continue watching row |
-| **Share / deep link** | `#/film/{film_id}` route, share button on film card |
-| **Content warning** | Dismissible first-visit banner + notice on about.html |
+| Feature | Status | Notes |
+|---|---|---|
+| Random film button | 🔜 Future | "I'm feeling lucky" — picks a random film from the full catalog |
+| Decade filter | 🔜 Future | 1920s, 1930s, 1940s etc. More granular than era chips |
+| Duration filter | 🔜 Future | Under 30 min / 30–90 min / 90+ min |
+| Content warning | 🔜 Future | Dismissible first-visit banner + notice on about.html |
 
 ---
 
