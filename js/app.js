@@ -33,6 +33,14 @@ async function _dispatch(path, params) {
     await renderSearch(app, params.q || '');
   } else if (path === '/library') {
     renderLibrary(app);
+  } else if (path.startsWith('/film/')) {
+    const id = path.slice(6);
+    const { loadCatalog } = await import('./api.js');
+    const { playQueue }   = await import('./player.js');
+    const catalog = await loadCatalog();
+    const film = catalog.find(f => f.film_id === id);
+    if (film) { await renderHome(app); playQueue([film], 0); }
+    else app.innerHTML = `<p class="text-white/50 mt-12 text-center">Film not found.</p>`;
   } else {
     app.innerHTML = `<p class="text-white/50 mt-12 text-center">Page not found.</p>`;
   }
