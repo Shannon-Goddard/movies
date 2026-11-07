@@ -46,7 +46,10 @@ export async function renderEpisodes(app, seriesName) {
       ${eps.map((f, i) => _epRow(f, i)).join('')}
     </div>`;
 
-  app.querySelector('#btn-back-series').addEventListener('click', () => renderSeries(app));
+  app.querySelector('#btn-back-series').addEventListener('click', () => {
+    if (history.length > 1) history.back();
+    else renderSeries(app);
+  });
   app.querySelector('#btn-play-series').addEventListener('click', () => playQueue(eps, 0));
 
   app.querySelector('#ep-list').addEventListener('click', e => {
