@@ -13,6 +13,7 @@ const TYPES = [
   { label: 'Short Film',   value: 'short'        },
   { label: 'Cartoon',      value: 'cartoon'      },
   { label: 'Serial',       value: 'serial'       },
+  { label: 'Series',       value: 'series'       },
   { label: 'Concert',      value: 'concert'      },
   { label: 'Newsreel',     value: 'newsreel'     },
   { label: 'Educational',  value: 'educational'  },
@@ -165,16 +166,38 @@ export async function render(app) {
       : await loadCatalog();
 
     if (active.genres.size)  catalog = catalog.filter(f => active.genres.has(f.genre));
-    if (active.types.size)   catalog = catalog.filter(f => active.types.has(f.type));
+    if (active.types.size) {
+      if (active.types.has('series')) {
+        const types = new Set([...active.types].filter(t => t !== 'series'));
+        catalog = catalog.filter(f => f.series_name || (types.size && types.has(f.type)));
+      } else {
+        catalog = catalog.filter(f => active.types.has(f.type));
+      }
+    }
     if (active.eras.size)    catalog = catalog.filter(f => active.eras.has(f.era));
     if (active.colors.size)  catalog = catalog.filter(f => active.colors.has(f.color));
     if (englishOnly)         catalog = catalog.filter(f => f.language === 'en');
 
+    // Collapse series into single cards
+    const seriesMap = new Map();
+    const collapsed = [];
+    for (const f of catalog) {
+      if (f.series_name) {
+        if (!seriesMap.has(f.series_name)) {
+          seriesMap.set(f.series_name, { _isSeries: true, series_name: f.series_name, _eps: [], film_id: f.film_id, poster_url: f.poster_url, year: f.year });
+          collapsed.push(seriesMap.get(f.series_name));
+        }
+        seriesMap.get(f.series_name)._eps.push(f);
+      } else {
+        collapsed.push(f);
+      }
+    }
+
     const PAGE = 20;
     activeScroll?.destroy();
     activeScroll = _loadPaged(
-      offset => Promise.resolve({ films: catalog.slice(offset, offset + PAGE), total: catalog.length }),
-      catalog
+      offset => Promise.resolve({ films: collapsed.slice(offset, offset + PAGE), total: collapsed.length }),
+      collapsed
     );
   }
 
@@ -261,7 +284,13 @@ function _loadPaged(fetchFn, allFilms) {
 // ── Components ────────────────────────────────────────────
 
 function _resumeBar(session) {
-  const title = session.film?.title || 'Last session';
+  const film  = session.film;
+  const s     = film?.season_num ? `S${film.season_num}` : '';
+  const e     = film?.episode_num ? `E${film.episode_num}` : '';
+  const badge = s || e ? `${s}${e} — ` : '';
+  const title = film?.series_name
+    ? `${film.series_name}: ${badge}${film.title || ''}`
+    : (film?.title || 'Last session');
   const pos   = session.position_sec ? _fmt(session.position_sec) : '';
   return `
     <div class="flex items-center justify-between bg-card rounded-lg px-4 py-3 mb-6"
@@ -284,6 +313,21 @@ function _posterCard(film, index, type) {
 }
 
 function _filmCard(film, index) {
+  if (film._isSeries) {
+    return `
+      <a href="#/series/${encodeURIComponent(film.series_name)}"
+         class="card bg-card rounded-lg overflow-hidden cursor-pointer hover:bg-raised transition"
+         style="border:1px solid rgba(255,255,255,0.06)">
+        <div class="relative aspect-[2/3] overflow-hidden">
+          ${posterThumb(film)}
+          <span class="absolute bottom-1.5 right-1.5 text-[10px] tabular-nums bg-black/70 text-white/80 px-1.5 py-0.5 rounded">${film._eps.length} eps</span>
+        </div>
+        <div class="p-2">
+          <p class="text-xs font-medium truncate leading-tight">${_esc(film.series_name)}</p>
+          <p class="text-[10px] text-white/35 truncate mt-0.5">Series${film.year ? ` · ${film.year}` : ''}</p>
+        </div>
+      </a>`;
+  }
   const duration = film.duration_sec ? _fmt(film.duration_sec) : '';
   const saved    = isSaved(film.film_id);
   const badges   = [film.year, film.color_label, film.era_label].filter(Boolean);

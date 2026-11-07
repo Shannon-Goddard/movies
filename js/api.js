@@ -64,6 +64,37 @@ export async function searchGratefulDead(limit = PAGE_SIZE, offset = 0) {
   return _page(filtered, offset, limit);
 }
 
+// ── Series helpers ────────────────────────────────────────
+
+export async function getSeriesMap() {
+  const all = await loadCatalog();
+  const map = new Map();
+  for (const f of all) {
+    if (!f.series_name) continue;
+    if (!map.has(f.series_name)) map.set(f.series_name, []);
+    map.get(f.series_name).push(f);
+  }
+  return map;
+}
+
+export async function getSeriesEpisodes(seriesName) {
+  const all = await loadCatalog();
+  const eps = all.filter(f => f.series_name === seriesName);
+  eps.sort((a, b) => {
+    const s = (Number(a.season_num) || 0) - (Number(b.season_num) || 0);
+    if (s !== 0) return s;
+    return (Number(a.episode_num) || 0) - (Number(b.episode_num) || 0);
+  });
+  return eps;
+}
+
+export async function getNextEpisode(film) {
+  if (!film?.series_name) return null;
+  const eps = await getSeriesEpisodes(film.series_name);
+  const idx = eps.findIndex(f => f.film_id === film.film_id);
+  return idx >= 0 && idx < eps.length - 1 ? eps[idx + 1] : null;
+}
+
 export function getStats() {
   if (_catalog) {
     const total = _catalog.length;

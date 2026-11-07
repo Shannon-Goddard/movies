@@ -1,7 +1,8 @@
 import './player.js';
-import { render as renderHome }    from './views/home.js';
-import { render as renderSearch }  from './views/search.js';
-import { render as renderLibrary } from './views/library.js';
+import { render as renderHome }         from './views/home.js';
+import { render as renderSearch }       from './views/search.js';
+import { render as renderLibrary }      from './views/library.js';
+import { renderSeries, renderEpisodes } from './views/series.js';
 
 const app = document.getElementById('app');
 
@@ -24,7 +25,7 @@ async function _dispatch(path, params) {
 
   document.querySelectorAll('.nav-link, .bottom-nav-item').forEach(el => {
     const href = el.getAttribute('href');
-    el.classList.toggle('active', href === `#${path}` || (href === '#/' && (path === '/' || path === '')));
+    el.classList.toggle('active', href === `#${path}` || (href === '#/' && (path === '/' || path === '')) || (href === '#/series' && path.startsWith('/series')));
   });
 
   if (path === '/' || path === '') {
@@ -33,6 +34,10 @@ async function _dispatch(path, params) {
     await renderSearch(app, params.q || '');
   } else if (path === '/library') {
     renderLibrary(app);
+  } else if (path === '/series') {
+    await renderSeries(app);
+  } else if (path.startsWith('/series/')) {
+    await renderEpisodes(app, decodeURIComponent(path.slice(8)));
   } else if (path.startsWith('/film/')) {
     const id = path.slice(6);
     const { loadCatalog } = await import('./api.js');

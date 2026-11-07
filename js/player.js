@@ -1,4 +1,5 @@
 import * as Queue from './queue.js';
+import { getNextEpisode } from './api.js';
 
 const overlay   = document.getElementById('video-overlay');
 const videoEl   = document.getElementById('video-el');
@@ -36,7 +37,15 @@ export function play(film) {
   videoEl.src    = film.stream_url;
   videoEl.poster = film.poster_url || '';
   videoEl.addEventListener('canplay', () => videoEl.play().catch(() => {}), { once: true });
-  videoTitle.textContent = film.title || '';
+  // Show series context in title bar if episode
+  if (film.series_name) {
+    const s = film.season_num ? `S${film.season_num}` : '';
+    const e = film.episode_num ? `E${film.episode_num}` : '';
+    const badge = s || e ? ` (${s}${e})` : '';
+    videoTitle.textContent = `${film.series_name}${badge} — ${film.title || ''}`;
+  } else {
+    videoTitle.textContent = film.title || '';
+  }
   document.title = `${film.title} — movies`;
   overlay.classList.add('active');
   _showControls();
@@ -168,9 +177,13 @@ btnFullscreen.addEventListener('click', e => {
 
 // ── Next / Prev ───────────────────────────────────────────
 
-function _onNext() {
-  const film = Queue.next();
-  if (film) play(film);
+async function _onNext() {
+  // If queue has a next item use it, otherwise check series next episode
+  const queued = Queue.next();
+  if (queued) { play(queued); return; }
+  const current = Queue.getCurrentFilm();
+  const next = current ? await getNextEpisode(current) : null;
+  if (next) { Queue.setQueue([next], 0); play(next); }
 }
 
 function _onPrev() {

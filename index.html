@@ -202,6 +202,7 @@
     <!-- Desktop nav -->
     <nav class="hidden sm:flex items-center gap-1 shrink-0">
       <a href="#/"        class="nav-link px-3 py-1.5 rounded-md text-sm text-white/50 hover:text-white hover:bg-raised transition">Home</a>
+      <a href="#/series"  class="nav-link px-3 py-1.5 rounded-md text-sm text-white/50 hover:text-white hover:bg-raised transition">Series</a>
       <a href="#/library" class="nav-link px-3 py-1.5 rounded-md text-sm text-white/50 hover:text-white hover:bg-raised transition">Watchlist</a>
     </nav>
 
@@ -225,6 +226,7 @@
     </div>
     <nav class="flex-1 px-2 py-3 overflow-y-auto">
       <a href="#/"        onclick="closeMenu()" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-raised transition">Home</a>
+      <a href="#/series"  onclick="closeMenu()" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-raised transition">Series</a>
       <a href="#/library" onclick="closeMenu()" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-raised transition">Watchlist</a>
       <a href="/movies/about.html" class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-raised transition">About</a>
       <div class="my-3" style="border-top:1px solid rgba(255,255,255,0.07)"></div>
@@ -281,7 +283,13 @@
       </svg>
       <span class="text-[10px] font-medium">Search</span>
     </a>
-    <a href="#/library" class="bottom-nav-item flex flex-col items-center gap-0.5 text-white/40 hover:text-white transition py-1 px-4">
+    <a href="#/series" class="bottom-nav-item flex flex-col items-center gap-0.5 text-white/40 hover:text-white transition py-1 px-3">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3l-4 4-4-4"/>
+      </svg>
+      <span class="text-[10px] font-medium">Series</span>
+    </a>
+    <a href="#/library" class="bottom-nav-item flex flex-col items-center gap-0.5 text-white/40 hover:text-white transition py-1 px-3">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
       </svg>
