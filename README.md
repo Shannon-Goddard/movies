@@ -1,7 +1,7 @@
 ![header](icons/header.png)
 
 [![Live Demo](https://img.shields.io/badge/live_demo-000000?logo=github)](https://shannon-goddard.github.io/movies/)
-[![Catalog](https://img.shields.io/badge/21%2C289_films-FFFFE0)](data/index.json)
+[![Catalog](https://img.shields.io/badge/21%2C101_films-FFFFE0)](data/index.json)
 [![License](https://img.shields.io/badge/license-MIT-5B7C99)](LICENSE)
 [![PWA](https://img.shields.io/badge/PWA-ready-b1430c?logo=pwa)](https://shannon-goddard.github.io/movies/)
 [![Built with Amazon Q](https://img.shields.io/badge/built_with-Amazon_Q-FF9900?logo=amazonaws)](https://aws.amazon.com/q/)
@@ -9,7 +9,7 @@
 
 ---
 
-A free, ad-free streaming platform for 21,289 public domain and open-licensed films — served entirely from static files with zero backend, zero cost, and zero compromises on speed.
+A free, ad-free streaming platform for 21,101 public domain and open-licensed films — served entirely from static files with zero backend, zero cost, and zero compromises on speed.
 
 > **[▶ Watch now →](https://shannon-goddard.github.io/movies/)**
 
@@ -21,7 +21,7 @@ A free, ad-free streaming platform for 21,289 public domain and open-licensed fi
 
 ## Features
 
-- **21,289 films** — features, shorts, cartoons, serials, concerts, newsreels, documentaries
+- **21,101 films** — features, shorts, cartoons, serials, concerts, newsreels, documentaries
 - **13 genres · 7 types · 4 eras · 3 color modes** — stackable filter chips, instant results
 - **320 series** — browse by series, episode lists, Play All, next-episode autoplay
 - **Zero latency** — `index.json` preloaded by service worker on first visit, every filter is a pure in-memory array operation after that
@@ -45,7 +45,7 @@ A free, ad-free streaming platform for 21,289 public domain and open-licensed fi
 Internet Archive (11 collections, public domain + CC-licensed)
        │
        ▼
-6-pass cleaning pipeline  →  21,289 surviving rows
+6-pass cleaning pipeline  →  21,101 surviving rows
        │                      genre / type / era / color / language / duration filters
        ▼
 data/index.json  ──────────────────────────────────────────────────────►  GitHub Pages CDN
@@ -64,11 +64,11 @@ No database. No API. No Lambda. No bill. Just a 3MB JSON file and a service work
 
 | | |
 |---|---|
-| Total films | 21,289 |
+| Total films | 21,101 |
 | Genres | Action · Horror · Documentary · Crime · Drama · Comedy · Animation · Musical · Western · Educational · Sci-Fi · Romance · Other |
 | Types | Feature · Short · Cartoon · Serial · Concert · Newsreel · Educational |
 | Eras | Silent Era · 1930s–50s · 1960s–70s · 1980s+ |
-| Series | 320 unique series, 5,364 serial episodes tagged with season/episode numbers |
+| Series | 265 unique series, 5,320 serial episodes tagged with season/episode numbers |
 | Source | [Internet Archive](https://archive.org) — public domain + Creative Commons |
 | Durations | Patched from live DynamoDB export — 99.9% coverage |
 
@@ -101,7 +101,7 @@ The full AWS infrastructure — DynamoDB, Lambda, API Gateway — was built alon
 
 | | |
 |---|---|
-| [Internet Archive](https://archive.org) | 21,289 public domain films, zero hosting cost |
+| [Internet Archive](https://archive.org) | 21,101 public domain films, zero hosting cost |
 | [GitHub Pages](https://pages.github.com) | Static hosting + CDN, free forever |
 | [Amazon Q Developer](https://aws.amazon.com/q/developer/) | AI pair programmer — architecture, cleaning pipeline, every line of code |
 | [Google Cast SDK](https://developers.google.com/cast) | Chromecast support, App ID `20706015` |
