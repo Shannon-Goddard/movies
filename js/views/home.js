@@ -178,11 +178,11 @@ export async function render(app) {
     if (active.colors.size)  catalog = catalog.filter(f => active.colors.has(f.color));
     if (englishOnly)         catalog = catalog.filter(f => f.language === 'en');
 
-    // Collapse series into single cards
+    // Collapse series into single cards (skip when GD chip active — results are individual films)
     const seriesMap = new Map();
     const collapsed = [];
     for (const f of catalog) {
-      if (f.series_name) {
+      if (!active.gd && f.series_name) {
         if (!seriesMap.has(f.series_name)) {
           seriesMap.set(f.series_name, { _isSeries: true, series_name: f.series_name, _eps: [], film_id: f.film_id, poster_url: f.poster_url, year: f.year });
           collapsed.push(seriesMap.get(f.series_name));
